@@ -1,5 +1,8 @@
-import debuggo.solve
 from debuggo.prototype import main
+
+def test_test():
+    print("Test test")
+    assert True
 
 def test_full():
     paths = main()
