@@ -1,7 +1,9 @@
 import debuggo.solve
+from debuggo.prototype import main
 
 def test_full():
-    assert True
+    paths = main()
+    true_paths = [['d', 'c', 'b', 'a'], ['d', 'c', 'b', 'not_a'], ['d', 'c', 'not_b', 'a'], ['d', 'c', 'not_b', 'not_a'], ['d', 'not_c', 'b', 'a'], ['d', 'not_c', 'b', 'not_a'], ['d', 'not_c', 'not_b', 'a'], ['d', 'not_c', 'not_b', 'not_a']]
+    assert true_paths == paths
 
-def test_conversion():
-    assert False
+
