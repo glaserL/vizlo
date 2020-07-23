@@ -39,3 +39,25 @@ class Solver():
     def generate_path(self, definition_history):
         paths = self.next_try([], definition_history, 0)
         return paths
+
+
+
+class SolverState():
+    """ 
+    Represents a single solver state that is created during execution. 
+    A SolverState consists of the current stable model, what became true and what became false
+    after the last step.
+
+    TODO: Also try to represent multi-model stable models
+    """
+
+    def __init__(self, model, added_trues, added_falses):
+        self.model = model
+        self.added_trues = added_trues
+        self.added_falses = added_falses
+
+
+class SolvingHistory():
+
+    def __init__(self):
+        self.stack = []
