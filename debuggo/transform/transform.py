@@ -6,7 +6,7 @@ class ASPTransformer():
     """
 
     def __init__(self):
-        pass
+        raise NotImplementedError
 
     def transform(self, program):
         print("DEBUGGING MODE")
@@ -25,3 +25,11 @@ h(d,4,()) :- not d.
 %c :- d.
 %d.
 """
+
+class IdentityTransformer(ASPTransformer):
+
+    def __init__(self):
+        pass
+
+    def transform(self, program):
+        return program
