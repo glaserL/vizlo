@@ -1,5 +1,5 @@
-from .solve import solver
-from .display import folder_display
+from debuggo.solve import solver
+from debuggo.display import folder_display
 def main():
 
     stable_models = [["d"], ["d", "c"], ["d", "c", "b"], ["d", "c", "b", "a"]]
