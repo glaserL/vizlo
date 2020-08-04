@@ -1,7 +1,8 @@
-from debuggo.prototype import main
+from prototype import main
 from debuggo.solve import solver
 from debuggo.types import SolvingHistory
 from debuggo.transform import transform
+from debuggo.display import folder_display
 
 
 def test_full():
@@ -46,15 +47,25 @@ def testSolverHistoryType():
     sh.pop()
 
 def testSurvivabilityOfModelObject():
-    pass
+    assert False == True
 
 def test_single_solver_runner_step():
-    it = transform.IdentityTransformer()
-    reified_program = it.transform("")
+    with open("tests/program_transformed_holds.lp", encoding="utf-8") as f:
+        reified_program = "".join(f.readlines())
     sr = solver.SolveRunner(reified_program)
     for _ in range(5):
         print(".",end="")
         sr.step()
-    print()
     history = sr.history
     print(history)
+
+def test_networkx():
+    with open("tests/program_transformed_holds.lp", encoding="utf-8") as f:
+        reified_program = "".join(f.readlines())
+    sr = solver.SolveRunner(reified_program)
+    for _ in range(5):
+        print(".",end="")
+        sr.step()
+    viz = folder_display.GraphVisualizer(sr.history)
+    viz.draw_networkx_graph()
+    

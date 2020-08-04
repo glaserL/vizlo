@@ -1,5 +1,7 @@
 import os
+import networkx as nx
 import pathlib
+import matplotlib.pyplot as plt
 
 class Visualizer(object):
     
@@ -27,3 +29,27 @@ class FolderVisualizer(Visualizer):
                 if not os.path.exists(mkpath):
                     pathlib.Path(mkpath).mkdir(parents=True)
         return paths
+
+
+class GraphVisualizer(Visualizer):
+    def __init__(self, solver_paths):
+        super().__init__(solver_paths)
+
+    def create_graph(self):
+        pass
+
+    def transform_to_neo4j(self):
+        pass
+
+    def transform_to_d3js(self):
+        pass
+
+    def draw_networkx_graph(self):
+        G = nx.Graph()
+        p = self.solver_paths
+        for i in range(1,len(p)):
+            G.add_edge(str(p[i-1].model), str(p[i].model))
+        nx.draw(G, with_labels=True)
+        plt.show()
+        
+
