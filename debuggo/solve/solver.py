@@ -58,7 +58,6 @@ class SolveRunner():
         print("Performing initial grounding..",end="")
         self.ground()
         print(". DONE")
-        self.history = []
         self.graph: nx.Graph() = nx.Graph()
         self.isStable = False
         self.prev = None
@@ -85,6 +84,17 @@ class SolveRunner():
         self.update_externals(externals)
         self.solve()
 
+    def add_model_to_history(self, model):
+        only_atoms = self.remove_holds_atoms_from_model(model)
+        new_solver_state = SolverState(only_atoms)
+        if (self.prev != None):
+            print(f"Adding ({self.prev})->({new_solver_state})")
+            self.graph.add_edge(self.prev, new_solver_state)
+        else:
+            print(f"Adding ({new_solver_state})")
+            self.graph.add_node(new_solver_state)
+        self.prev = new_solver_state
+
     def step(self):
         #ctl.solve(on_model=on_model)
         true_externals = []
@@ -98,17 +108,9 @@ class SolveRunner():
                         head = symbol.arguments[0]
                         true_externals.append(head)
                 #ctl.assign_external(clingo.String("d"),True)
-        
-        sose = SolverState.create_state_from_old_and_new_model(self.history, symbols_in_model)
-        only_atoms = self.remove_holds_atoms_from_model(symbols_in_model)
-        if (self.prev != None):
-            self.graph.add_edge(self.prev, only_atoms)
-        else:
-            self.graph.add_node(only_atoms)
-        self.prev = only_atoms
 
-        # TODO: Update here if we reached the stable model
-        self.history.append(sose)
+        self.add_model_to_history(symbols_in_model)
+
         for ext in true_externals:
             print(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext,ext.positive)
@@ -118,7 +120,7 @@ class SolveRunner():
         for symbol in model:
             if not symbol.name == "h":
                 cleaned_model.add(symbol)
-        return frozenset(cleaned_model)
+        return cleaned_model
     
 
 class SolverState():
@@ -130,23 +132,8 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, added_trues, added_falses):
+    def __init__(self, model):
         self.model = model
-        self.added_trues = added_trues
-        self.added_falses = added_falses
     
     def __repr__(self):
-        return f"SolverState{{\n\t{self.model}\n\t+{self.added_trues}\n\t-{self.added_falses}\n}}"
-
-    @staticmethod
-    def create_state_from_old_and_new_model(history, symbols):
-        if len(history)==0:
-            return SolverState(set(symbols),set(),set())
-        else:
-            previous: SolverState = history[-1]
-            symbols_as_set = set(symbols)
-            assert len(list(symbols_as_set)) == len(symbols)
-
-            added_trues = symbols_as_set.difference(previous.model)
-            added_falses = previous.model.difference(symbols_as_set)
-            return SolverState(symbols_as_set, added_trues, added_falses)
+        return f"{self.model}"

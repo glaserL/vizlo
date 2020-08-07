@@ -21,13 +21,5 @@ def test_single_solver_runner_step():
     for _ in range(5):
         print(".",end="")
         sr.step()
-    history = sr.history
-    print(history)
-    assert len(history) == 5
-
-
-## Solver History and State
-def testSolverHistoryType():
-    sh: SolvingHistory = []
-    sh.append(solver.SolverState(None, None, None))
-    sh.pop()
+    graph = sr.graph
+    assert len(graph) == 5
