@@ -61,6 +61,7 @@ class SolveRunner():
         self.graph: nx.Graph() = nx.Graph()
         self.isStable = False
         self.prev = None
+        self.current_model = None
     
     def next(self):
 
@@ -85,16 +86,26 @@ class SolveRunner():
         self.solve()
 
     def add_model_to_history(self, model):
-        only_atoms = self.remove_holds_atoms_from_model(model)
-        new_solver_state = SolverState(only_atoms)
         if (self.prev != None):
-            print(f"Adding ({self.prev})->({new_solver_state})")
-            self.graph.add_edge(self.prev, new_solver_state)
+            print(f"Adding ({self.prev})->({model})")
+            self.graph.add_edge(self.prev, model)
         else:
-            print(f"Adding ({new_solver_state})")
-            self.graph.add_node(new_solver_state)
-        self.prev = new_solver_state
+            print(f"Adding ({model})")
+            self.graph.add_node(model)
+        self.prev = model
 
+    def solver_has_reached_stable_model(self):
+        if self.current_model == self.prev:
+            print("Solver has reached a stable model.")
+            return True
+        else:
+            print("Solving..")
+            return False 
+    
+    def step_until_stable(self):
+        while not self.solver_has_reached_stable_model():
+            self.step()
+    
     def step(self):
         #ctl.solve(on_model=on_model)
         true_externals = []
@@ -108,12 +119,13 @@ class SolveRunner():
                         head = symbol.arguments[0]
                         true_externals.append(head)
                 #ctl.assign_external(clingo.String("d"),True)
+        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model))
+        if (not self.solver_has_reached_stable_model()):
+            
+            self.add_model_to_history(self.current_model)
 
-        self.add_model_to_history(symbols_in_model)
+            self.update_externals(true_externals)
 
-        for ext in true_externals:
-            print(f"Setting {ext.name} to {ext.positive}.")
-            self.ctl.assign_external(ext,ext.positive)
     
     def remove_holds_atoms_from_model(self, model):
         cleaned_model = set()
@@ -137,8 +149,11 @@ class SolverState():
     
     def __repr__(self):
         return f"{self.model}"
-
+    
     def __eq__(self, other):
         if isinstance(other, SolverState):
             return self.model == other.model
         return False
+
+    def __hash__(self):
+        return id(self)
