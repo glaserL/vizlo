@@ -63,16 +63,6 @@ class SolveRunner():
         self.prev = None
         self.current_model = None
     
-    def next(self):
-
-        pass
-
-    def solve(self):
-        with self.ctl.solve(yield_=True) as handle:
-            for m in handle:
-                for symbol in m.symbols(atoms=True):
-                    head = symbol.arguments[0]
-
     def ground(self):
         self.ctl.ground([("base", [])])
 
@@ -80,10 +70,6 @@ class SolveRunner():
         for ext in externals:
             print(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext, ext.positive)
-
-    def update_and_solve(self, externals):
-        self.update_externals(externals)
-        self.solve()
 
     def add_model_to_history(self, model):
         if (self.prev != None):
