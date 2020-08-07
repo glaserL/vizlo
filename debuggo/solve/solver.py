@@ -1,5 +1,6 @@
 
 import clingo
+import networkx as nx
 
 
 class Solver():
@@ -58,7 +59,9 @@ class SolveRunner():
         self.ground()
         print(". DONE")
         self.history = []
+        self.graph: nx.Graph() = nx.Graph()
         self.isStable = False
+        self.prev = None
     
     def next(self):
 
@@ -94,16 +97,28 @@ class SolveRunner():
                     if len(symbol.arguments)>0:
                         head = symbol.arguments[0]
                         true_externals.append(head)
-
                 #ctl.assign_external(clingo.String("d"),True)
         
         sose = SolverState.create_state_from_old_and_new_model(self.history, symbols_in_model)
+        only_atoms = self.remove_holds_atoms_from_model(symbols_in_model)
+        if (self.prev != None):
+            self.graph.add_edge(self.prev, only_atoms)
+        else:
+            self.graph.add_node(only_atoms)
+        self.prev = only_atoms
+
         # TODO: Update here if we reached the stable model
         self.history.append(sose)
         for ext in true_externals:
             print(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext,ext.positive)
-        
+    
+    def remove_holds_atoms_from_model(self, model):
+        cleaned_model = set()
+        for symbol in model:
+            if not symbol.name == "h":
+                cleaned_model.add(symbol)
+        return frozenset(cleaned_model)
     
 
 class SolverState():
@@ -135,4 +150,3 @@ class SolverState():
             added_trues = symbols_as_set.difference(previous.model)
             added_falses = previous.model.difference(symbols_as_set)
             return SolverState(symbols_as_set, added_trues, added_falses)
-        

@@ -32,8 +32,9 @@ class FolderVisualizer(Visualizer):
 
 
 class GraphVisualizer(Visualizer):
-    def __init__(self, solver_paths):
-        super().__init__(solver_paths)
+    def __init__(self, solver_graph):
+        super().__init__(None)
+        self.solver_graph = solver_graph
 
     def create_graph(self):
         pass
@@ -44,12 +45,10 @@ class GraphVisualizer(Visualizer):
     def transform_to_d3js(self):
         pass
 
-    def draw_networkx_graph(self):
-        G = nx.Graph()
-        p = self.solver_paths
-        for i in range(1,len(p)):
-            G.add_edge(str(p[i-1].model), str(p[i].model))
-        nx.draw(G, with_labels=True)
-        plt.show()
-        
+    def draw_networkx_graph(self, draw = False):
+        G = self.solver_graph
+        if (draw):
+            nx.draw(G, with_labels=True)
+            plt.show()
+            
 

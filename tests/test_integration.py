@@ -8,6 +8,6 @@ def test_networkx():
     for _ in range(5):
         print(".",end="")
         sr.step()
-    viz = folder_display.GraphVisualizer(sr.history)
+    viz = folder_display.GraphVisualizer(sr.graph)
     viz.draw_networkx_graph()
     
