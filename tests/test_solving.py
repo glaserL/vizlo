@@ -23,3 +23,9 @@ def test_single_solver_runner_step():
         sr.step()
     graph = sr.graph
     assert len(graph) == 5
+
+def test_has_reached_stable_model_function():
+    one = solver.SolverState(set(["A","B"]))
+    two = solver.SolverState(set(["A","B"]))
+    assert one == two
+

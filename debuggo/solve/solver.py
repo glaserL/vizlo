@@ -137,3 +137,8 @@ class SolverState():
     
     def __repr__(self):
         return f"{self.model}"
+
+    def __eq__(self, other):
+        if isinstance(other, SolverState):
+            return self.model == other.model
+        return False
