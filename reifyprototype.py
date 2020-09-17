@@ -25,9 +25,7 @@ class Transformer:
             raise TypeError("unexpected type")
 
 class TermTransformer(Transformer):
-    def __init__(self, parameter):
-        self.parameter = parameter
-    
+
     
     def visit_Function(self, term):
         line = term.location["begin"]["line"]
@@ -41,14 +39,8 @@ class TermTransformer(Transformer):
         # but this case could occur in a valid AST
         fun = term.symbol
         assert(fun.type == clingo.SymbolType.Function)
-        term.symbol = clingo.Function(fun.name, fun.arguments + [self.parameter], fun.positive)
+        # term.symbol = clingo.Function(fun.name, fun.arguments + [self.parameter], fun.positive)
         return term
-
-class ProgramTransformer(Transformer):
-    def __init__(self, parameter):
-        self.parameter = parameter
-        print(f"self.parameter: {self.parameter}")
-        self.term_transformer = TermTransformer(parameter)
 
 # y) class HeadBodyTransformer(Transformer):
 # def
@@ -68,7 +60,7 @@ class ProgramTransformer(Transformer):
         # clingo.ast.Function(location, name, arguments, external)
         new_head = clingo.ast.Function(rule.location, "h", "a", False)
         new_head = clingo.ast.Literal(rule.location, "", new_head)
-        new_head = self.visit(rule.head)
+        # new_head = self.visit(rule.head)
         print(f"Created head: {new_head}")
         new_body = clingo.ast.Literal(rule.head.location, "", rule.head)
         new_body = rule.body
@@ -81,16 +73,7 @@ class ProgramTransformer(Transformer):
         new_rule = clingo.ast.Rule(rule.location, new_head, new_body)
         print(f"Created rule: {new_rule}")
         return new_rule
-    def visit_SymbolicAtom(self, atom):
-        atom.term = self.term_transformer.visit(atom.term)
-        return atom
-
-    def visit_Program(self, prg):
-        # Some internal magic?
-        print(self.parameter.name)
-        prg.parameters.append(clingo.ast.Id(prg.location, self.parameter.name))
-        return prg
-
+        
     def visit_ShowSignature(self, sig):
         sig.arity += 1
         return sig
@@ -101,11 +84,13 @@ class ProgramTransformer(Transformer):
 
 def main(prg):
     with prg.builder() as b:
-        t = ProgramTransformer(clingo.Function("k"))
+        t = TermTransformer()
         clingo.parse_program(
             open("tests/program.lp").read(),
-            lambda stm: b.add(t.visit(stm))) # stm mean line in code
-    prg.ground([("base", [clingo.Number(i)]) for i in range(3)])
+            lambda stm: b.add(
+                t.visit(stm)
+                )) # stm mean line in code
+    prg.ground([("base", [])])
     prg.solve()
 
 
