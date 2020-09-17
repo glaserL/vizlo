@@ -47,9 +47,8 @@ class PrettyWidget(QWidget):
 
     def plot1(self):
         self.figure.clf()
-        plt.subplots(1)
-        nx.draw(self.G)
-        plt.show()
+        ax2 = self.figure.add_subplot(111)
+        nx.draw(self.G, ax=ax2)
         print("Drawing..")
         self.canvas.draw_idle()
 
