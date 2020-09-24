@@ -3,7 +3,7 @@ from PySide2 import QtGui, QtCore
 import networkx as nx
 from PySide2.QtWidgets import (QAction, QApplication, QHeaderView, QHBoxLayout, QLabel, QLineEdit,
                                QMainWindow, QPushButton, QTableWidget, QTableWidgetItem,
-                               QVBoxLayout, QWidget,QDesktopWidget,QGridLayout,QSplitter)
+                               QVBoxLayout, QWidget,QDesktopWidget,QGridLayout,QSplitter, QListWidget)
 from PySide2.QtCore import Slot, qApp
 import matplotlib
 import matplotlib.figure
@@ -107,7 +107,8 @@ class MainWindow(QMainWindow):
         topRight = Color('green')
         bottomRight = Color('yellow')
         rightSplitter = QSplitter(QtCore.Qt.Vertical)
-        rightSplitter.addWidget(topRight)
+        listWidget = self.createListWidget()
+        rightSplitter.addWidget(listWidget)
         rightSplitter.addWidget(bottomRight)
         rightStack = QVBoxLayout()
         rightStack.addWidget(rightSplitter)
@@ -123,6 +124,12 @@ class MainWindow(QMainWindow):
         
         self.setCentralWidget(horizontalSplitter)
 
+    def createListWidget(self):
+        listWidget = QListWidget()
+        listWidget.setAlternatingRowColor = True
+        listWidget.addItem("Foo")
+        listWidget.addItem("Bar")
+        return listWidget
 
     @Slot()
     def exit_app(self, checked):
