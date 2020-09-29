@@ -1,5 +1,13 @@
-
+from typing import List
 from debuggo.transform import transform
+
+
+def are_two_lists_identical(a, b):
+    print(a)
+    print(b)
+    return len((set(a) ^ set(b))) == 0
+
+
 def test_identity_transformer():
     it = transform.IdentityTransformer()
     with open("tests/program.lp", encoding="utf-8") as f:
@@ -20,3 +28,15 @@ def test_holds_transformer():
     with open("tests/program_transformed_holds.lp", encoding="utf-8") as f:
         gold_result = "".join(f.readlines())
     assert program == gold_result
+
+def test_ast_transformer():
+    at = transform.HeadBodyTransformer()
+    with open("tests/program.lp", encoding="utf-8") as f:
+        at.transform("".join(f.readlines()))
+        program = at.get_reified_program_as_str()
+    
+    with open("tests/program_transformed_holds.lp", encoding="utf-8") as f:
+        gold_result = "".join(f.readlines())
+    assert are_two_lists_identical(program.split("\n"), gold_result.split("\n"))
+
+    
