@@ -3,7 +3,7 @@ from copy import copy
 
 import clingo, heapq
 from clingo import ast
-
+from typing import List
 
 
 class ASPTransformer():
@@ -141,32 +141,40 @@ class Transformer(Visitor):
 
 
 class HeadBodyTransformer(Transformer):
+    def __init__(self):
+        self._reified_program = []
+        self._atoms_to_assign_as_external: List[clingo.ast.Function] = []
+
     def visit_Rule(self, rule):#(\label{prg:dl:transformer:rule:begin}#)
         head = rule.head
         body = rule.body
         print(f"Before:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
-        #holds_symbolicAtom = clingo.ast.SymbolicAtom(head)
-        #holds_func = clingo.ast.Function(head.location, clingo.ast.Symbol(head.location, clingo.Function("h")), head, False)
-        #self.visit(holds_func)
-        #head = clingo.ast.Literal(head.location,head.sign,holds_func)
         holds_func = clingo.ast.Function(head.location, clingo.ast.Symbol(head.location, clingo.Function("h")),[head], False)
         holds_atom = clingo.ast.SymbolicAtom(holds_func)
         holds_literal = clingo.ast.Literal(head.location, head.sign, holds_atom)
         #head = self.visit(head)
-        body = self.visit(body)
-    
-        #new_head = self.create_new_head(head)
         print("####################")
-        linenumber = clingo.ast.Symbol(head.location, clingo.Number(head.location["begin"]["line"]))
-        head_as_term = head.atom.term
-        print(head_as_term)
+        body = self.visit(body)
+        print(self._atoms_to_assign_as_external)
+        body_as_func_argument = copy(body)
+        body_as_func_argument = [lit.atom.term for lit in body_as_func_argument]
+        body_as_holds = clingo.ast.Function(head.location, "", body_as_func_argument, False)
+        print(f"body_as_holds: {body_as_holds}")
+
         negated_head = clingo.ast.Literal(head.location, head.sign.Negation, head.atom)
         body.append(negated_head)
-        holds_func = clingo.ast.Function(head.location, "h", [head_as_term, linenumber], False)
+        
+        #new_head = self.create_new_head(head)
+        linenumber = clingo.ast.Symbol(head.location, clingo.Number(head.location["begin"]["line"]))
+        head_as_term = head.atom.term
+        print(head_as_term.type)
+        self._atoms_to_assign_as_external.append(head_as_term.name)
+        holds_func = clingo.ast.Function(head.location, "h", [head_as_term, linenumber, body_as_holds], False)
         holds_symbolicAtom = clingo.ast.SymbolicAtom(holds_func)
         holds_literal = clingo.ast.Literal(head.location,head.sign, holds_symbolicAtom)
         head = holds_literal
         print(holds_literal)
+        print(self._atoms_to_assign_as_external)
         
         print("####################")
         #if len(body):
@@ -175,6 +183,7 @@ class HeadBodyTransformer(Transformer):
         print(f"After:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
         rule = ast.Rule(rule.location, head, body)
         print(f"Result:{rule} ({rule.type})")
+        print(self._atoms_to_assign_as_external)
         return rule#(\label{prg:dl:transformer:rule:end}#)
 
     def create_new_head(self, head):
@@ -229,3 +238,38 @@ class HeadBodyTransformer(Transformer):
     def visit_Symbol(self, symb):
         print(f"Visiting symbol {symb}")
         return symb
+
+
+    def transform(self, program):
+        prg = clingo.Control()
+        print
+        with prg.builder() as b:
+            t = HeadBodyTransformer()
+            clingo.parse_program(
+                program,
+                lambda stm: self.funcy(b, t, stm)) # stm mean line in code
+        self._append_externals_to_program(self._reified_program, self._atoms_to_assign_as_external)
+        return self._reified_program
+    
+    def _append_externals_to_program(self, program, externals):
+        for external in externals:
+            program.append(f"#external {external}.")
+    
+    def funcy(self, b, t, stm):
+        print("One funcy call.")
+        print(stm)
+        result = t.visit(stm)
+        if str(stm.type) == "Rule":
+            self._atoms_to_assign_as_external.append(stm.head)
+        print(f"Funcy result: {result}")
+        b.add(result)
+        self._reified_program.append(result)
+        print("funcy call end.")
+
+    def get_reified_program(self) -> clingo.ast.AST:
+        return self._reified_program
+
+    def get_reified_program_as_str(self) -> str:
+        prg_as_str = "\n".join([str(x) for x in self._reified_program])
+        print(prg_as_str)
+        return prg_as_str
