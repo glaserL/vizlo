@@ -1,4 +1,10 @@
 
+from copy import copy
+
+import clingo, heapq
+from clingo import ast
+
+
 
 class ASPTransformer():
     """
@@ -62,3 +68,164 @@ class HoldsTransformer(ASPTransformer):
     
         return "\n".join(transformed_lines)
 
+class Visitor:
+    def visit_children(self, x, *args, **kwargs):
+        for key in x.child_keys:
+            self.visit(getattr(x, key), *args, **kwargs)
+
+    def visit_list(self, x, *args, **kwargs):
+        for y in x:
+            self.visit(y, *args, **kwargs)
+
+    def visit_tuple(self, x, *args, **kwargs):
+        print(f"Visting tuple {x}")
+        for y in x:
+            self.visit(y, *args, **kwargs)
+
+    def visit_none(self, *args, **kwargs):
+        pass
+
+    def visit(self, x, *args, **kwargs):
+        if isinstance(x, ast.AST):
+            attr = "visit_" + str(x.type)
+            print(f"{x} ({attr} (({hasattr(self, attr)})) {{{kwargs}}})")
+            if hasattr(self, attr):
+                return getattr(self, attr)(x, *args, **kwargs)
+            return self.visit_children(x, *args, **kwargs)
+        if isinstance(x, list):
+            return self.visit_list(x, *args, **kwargs)
+        if isinstance(x, tuple):
+            return self.visit_tuple(x, *args, **kwargs)
+        if x is None:
+            return self.visit_none(x, *args, **kwargs)
+        raise TypeError("unexpected type: {}".format(x))
+
+
+class Transformer(Visitor):
+    def visit_children(self, x, *args, **kwargs):
+        copied = False
+        for key in x.child_keys:
+            y = getattr(x, key)
+            z = self.visit(y, *args, **kwargs)
+            if y is not z:
+                if not copied:
+                    copied = True
+                    x = copy(x)
+                setattr(x, key, z)
+        return x
+
+    def _seq(self, i, z, x, args, kwargs):
+        print("Visting Transformer swq")
+        for y in x[:i]:
+            yield y
+        yield z
+        for y in x[i+1:]:
+            yield self.visit(y, *args, **kwargs)
+
+    def visit_list(self, x, *args, **kwargs):
+        print(f"Visting Transformer lst {x}")
+        for i, y in enumerate(x):
+            z = self.visit(y, *args, **kwargs)
+            if y is not z:
+                return list(self._seq(i, z, x, args, kwargs))
+        return x
+
+    def visit_tuple(self, x, *args, **kwargs):
+        print("Visting Transformer tup")
+        for i, y in enumerate(x):
+            z = self.visit(y, *args, **kwargs)
+            if y is not z:
+                return tuple(self._seq(i, z, x, args, kwargs))
+        return x
+
+
+
+class HeadBodyTransformer(Transformer):
+    def visit_Rule(self, rule):#(\label{prg:dl:transformer:rule:begin}#)
+        head = rule.head
+        body = rule.body
+        print(f"Before:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
+        #holds_symbolicAtom = clingo.ast.SymbolicAtom(head)
+        #holds_func = clingo.ast.Function(head.location, clingo.ast.Symbol(head.location, clingo.Function("h")), head, False)
+        #self.visit(holds_func)
+        #head = clingo.ast.Literal(head.location,head.sign,holds_func)
+        holds_func = clingo.ast.Function(head.location, clingo.ast.Symbol(head.location, clingo.Function("h")),[head], False)
+        holds_atom = clingo.ast.SymbolicAtom(holds_func)
+        holds_literal = clingo.ast.Literal(head.location, head.sign, holds_atom)
+        #head = self.visit(head)
+        body = self.visit(body)
+    
+        #new_head = self.create_new_head(head)
+        print("####################")
+        linenumber = clingo.ast.Symbol(head.location, clingo.Number(head.location["begin"]["line"]))
+        head_as_term = head.atom.term
+        print(head_as_term)
+        negated_head = clingo.ast.Literal(head.location, head.sign.Negation, head.atom)
+        body.append(negated_head)
+        holds_func = clingo.ast.Function(head.location, "h", [head_as_term, linenumber], False)
+        holds_symbolicAtom = clingo.ast.SymbolicAtom(holds_func)
+        holds_literal = clingo.ast.Literal(head.location,head.sign, holds_symbolicAtom)
+        head = holds_literal
+        print(holds_literal)
+        
+        print("####################")
+        #if len(body):
+        #    body.extend(self.visit(body, neg=True))
+        # body.append(ast.Literal(rule.location, "", body[0]))
+        print(f"After:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
+        rule = ast.Rule(rule.location, head, body)
+        print(f"Result:{rule} ({rule.type})")
+        return rule#(\label{prg:dl:transformer:rule:end}#)
+
+    def create_new_head(self, head):
+        print("====")
+        head_as_func = head.atom.term
+        holds_head_func = self.reify(head_as_func)
+        holds_symbolicAtom = clingo.ast.SymbolicAtom(holds_head_func)
+        holds_literal = clingo.ast.Literal(head.location,head.sign, holds_symbolicAtom)
+        print(holds_head_func)
+        print("====")
+    
+    def visit_Literal(self, literal, neg=False):
+        print(f"Visting literal: {literal}")
+        if neg:
+            literal.sign = literal.sign.Negation
+        else:
+            literal.sign = literal.sign
+        print(f"Returning literal: {literal}")
+        literal.atom = self.visit(literal.atom)
+        return literal
+
+    def visit_SymbolicAtom(self, atom, neg=False):
+        print(f"Visting symbolic atom: {atom}")
+        print(f"atom.term: {atom.term} ({atom.term.type})")
+        
+        if neg:
+            atom.term = self.visit(atom.term)
+        else:
+            atom.term = self.visit(atom.term)
+        print(f"Returning symbolic atom: {atom}")
+        return atom
+
+    def reify(self, func):
+        func_name_as_arg = clingo.ast.Symbol(func.location, clingo.Function(func.name))
+        func.name = "h"
+        func.arguments = [func_name_as_arg]
+        return func
+
+    def visit_Function(self, func, loc="body"):
+        print(f"Visting function: {func}")
+        print(f"{func.location} ({type(func.location)}))")
+        print(f"{func.name} ({type(func.name)}))")
+        print(f"{func.arguments} ({[x.type for x in func.arguments] if isinstance(func.arguments, list) else func.arguments.type}))")
+        print(f"{func.external} ({type(func.external)}))")
+        # if not len(func.arguments):
+            # new_func = self.reify(func)
+        # else:
+        new_func = func
+        print(f"Returning function: {new_func}")
+        return new_func
+
+    def visit_Symbol(self, symb):
+        print(f"Visiting symbol {symb}")
+        return symb
