@@ -450,21 +450,6 @@ class GraphWidget(QGraphicsView):
         else:
             super(GraphWidget, self).keyPressEvent(event)
 
-    def timerEvent(self, event):
-        nodes = [item for item in self.scene().items() if isinstance(item, Node)]
-
-        for node in nodes:
-            node.calculateForces()
-
-        itemsMoved = False
-        for node in nodes:
-            if node.advance():
-                itemsMoved = True
-
-        if not itemsMoved:
-            self.killTimer(self.timerId)
-            self.timerId = 0
-
     def wheelEvent(self, event):
         self.scaleView(math.pow(2.0, -event.delta() / 240.0))
 
