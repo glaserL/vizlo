@@ -58,7 +58,7 @@ class SolveRunner():
         print("Performing initial grounding..",end="")
         self.ground()
         print(". DONE")
-        self.graph: nx.Graph() = nx.Graph()
+        self.graph: nx.Graph() = nx.DiGraph()
         self.isStable = False
         self.prev = None
         self.current_model = None
