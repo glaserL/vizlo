@@ -62,6 +62,7 @@ class SolveRunner():
         self.isStable = False
         self.prev = None
         self.current_model = None
+        self._step_count = 0
     
     def ground(self):
         self.ctl.ground([("base", [])])
@@ -71,10 +72,10 @@ class SolveRunner():
             print(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext, ext.positive)
 
-    def add_model_to_history(self, model):
+    def add_model_to_history(self, model, rule):
         if (self.prev != None):
-            print(f"Adding ({self.prev})->({model})")
-            self.graph.add_edge(self.prev, model)
+            print(f"Adding ({self.prev})-[{rule}]>({model})")
+            self.graph.add_edge(self.prev, model, rule=rule)
         else:
             print(f"Adding ({model})")
             self.graph.add_node(model)
@@ -95,6 +96,7 @@ class SolveRunner():
     def step(self):
         #ctl.solve(on_model=on_model)
         true_externals = []
+        rule_no_because_of_which_true_externals_are_true = -1
         with self.ctl.solve(yield_=True) as handle:
             for m in handle:
                 symbols_in_model = m.symbols(atoms=True)
@@ -103,15 +105,17 @@ class SolveRunner():
                     # TODO: match expression here??
                     if len(symbol.arguments)>0:
                         head = symbol.arguments[0]
+                        print(type(symbol.arguments[1].number))
+                        rule_no_because_of_which_true_externals_are_true = symbol.arguments[1].number
                         true_externals.append(head)
                 #ctl.assign_external(clingo.String("d"),True)
-        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model))
+        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model), self._step_count)
         if (not self.solver_has_reached_stable_model()):
             
-            self.add_model_to_history(self.current_model)
+            self.add_model_to_history(self.current_model, self.program.split("\n")[rule_no_because_of_which_true_externals_are_true])
 
             self.update_externals(true_externals)
-
+        self._step_count += 1
     
     def remove_holds_atoms_from_model(self, model):
         cleaned_model = set()
@@ -130,8 +134,9 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model):
+    def __init__(self, model, step = 0):
         self.model = model
+        self.step = step
     
     def __repr__(self):
         return f"{self.model}"
