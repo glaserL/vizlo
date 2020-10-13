@@ -1,6 +1,8 @@
 
 import clingo
 import networkx as nx
+import logging
+
 
 
 class Solver():
@@ -50,30 +52,33 @@ class SolveRunner():
     Interacts with the clingo solver to produce a full solving history. 
     """
     def __init__(self, program):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
         self.program = program
         ctl = clingo.Control()
         ctl.add("base", [], program)
-        print("Configured SolveRunner.")
+        self.logger.info("Configured SolveRunner.")
         self.ctl = ctl
-        print("Performing initial grounding..",end="")
+        self.logger.info("Performing initial grounding..")
         self.ground()
-        print(". DONE")
+        self.logger.info(". DONE")
         self.graph: nx.Graph() = nx.Graph()
         self.isStable = False
         self.prev = None
         self.current_model = None
+        self._step_count = 0
     
     def ground(self):
         self.ctl.ground([("base", [])])
 
     def update_externals(self, externals):
         for ext in externals:
-            print(f"Setting {ext.name} to {ext.positive}.")
+            self.logger.info(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext, ext.positive)
 
     def add_model_to_history(self, model):
         if (self.prev != None):
-            print(f"Adding ({self.prev})->({model})")
+            self.logger.info(f"Adding ({self.prev})->({model})")
             self.graph.add_edge(self.prev, model)
         else:
             print(f"Adding ({model})")
@@ -82,7 +87,7 @@ class SolveRunner():
 
     def solver_has_reached_stable_model(self):
         if self.current_model == self.prev:
-            print("Solver has reached a stable model.")
+            self.logger.error("Solver has reached a stable model.")
             return True
         else:
             print("Solving..")
@@ -105,12 +110,13 @@ class SolveRunner():
                         head = symbol.arguments[0]
                         true_externals.append(head)
                 #ctl.assign_external(clingo.String("d"),True)
-        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model))
+        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model), self._step_count)
         if (not self.solver_has_reached_stable_model()):
             
             self.add_model_to_history(self.current_model)
 
             self.update_externals(true_externals)
+        self._step_count += 1
 
     
     def remove_holds_atoms_from_model(self, model):
@@ -130,8 +136,9 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model):
+    def __init__(self, model, step = -1):
         self.model = model
+        self.step = step
     
     def __repr__(self):
         return f"{self.model}"

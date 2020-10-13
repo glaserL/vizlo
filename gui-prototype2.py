@@ -124,60 +124,60 @@ class Color(QWidget):
         palette = self.palette()
         palette.setColor(QtGui.QPalette.Window, QtGui.QColor(color))
         self.setPalette(palette)
-class PrettyWidget(QWidget):
-    def __init__(self, graph):
-        super(PrettyWidget, self).__init__()
-        self.initUI()
-        self.G = graph
+# class PrettyWidget(QWidget):
+#     def __init__(self, graph):
+#         super(PrettyWidget, self).__init__()
+#         self.initUI()
+#         self.G = graph
 
-    def initUI(self):
+#     def initUI(self):
 
-        self.setGeometry(100, 100, 800, 600)
-        self.center()
-        self.setWindowTitle('Graph')
+#         self.setGeometry(100, 100, 800, 600)
+#         self.center()
+#         self.setWindowTitle('Graph')
 
-        grid = QGridLayout()
-        self.setLayout(grid)
+#         grid = QGridLayout()
+#         self.setLayout(grid)
 
-        btn1 = QPushButton('Plot 1 ', self)
-        btn1.resize(btn1.sizeHint())
-        btn1.clicked.connect(self.plot1)
-        grid.addWidget(btn1, 5, 0)
+#         btn1 = QPushButton('Plot 1 ', self)
+#         btn1.resize(btn1.sizeHint())
+#         btn1.clicked.connect(self.plot1)
+#         grid.addWidget(btn1, 5, 0)
 
-        btn2 = QPushButton('Plot 2 ', self)
-        btn2.resize(btn2.sizeHint())
-        btn2.clicked.connect(self.plot2)
-        grid.addWidget(btn2, 5, 1)
+#         btn2 = QPushButton('Plot 2 ', self)
+#         btn2.resize(btn2.sizeHint())
+#         btn2.clicked.connect(self.plot2)
+#         grid.addWidget(btn2, 5, 1)
 
-        self.figure = matplotlib.figure.Figure()
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        grid.addWidget(self.canvas, 3, 0, 1, 2)
-        # grid.addWidget(self.toolbar, ??)
+#         self.figure = matplotlib.figure.Figure()
+#         self.canvas = FigureCanvas(self.figure)
+#         self.toolbar = NavigationToolbar(self.canvas, self)
+#         grid.addWidget(self.canvas, 3, 0, 1, 2)
+#         # grid.addWidget(self.toolbar, ??)
 
-        self.show()
+#         self.show()
 
-    def plot1(self):
-        self.figure.clf()
-        ax2 = self.figure.add_subplot(111)
-        nx.draw(self.G, ax=ax2)
-        print("Drawing..")
-        self.canvas.draw_idle()
+#     def plot1(self):
+#         self.figure.clf()
+#         ax2 = self.figure.add_subplot(111)
+#         nx.draw(self.G, ax=ax2)
+#         print("Drawing..")
+#         self.canvas.draw_idle()
 
-    def plot2(self):
-        self.figure.clf()
-        ax3 = self.figure.add_subplot(111)
-        x = [i for i in range(100)]
-        y = [i**0.5 for i in x]
-        ax3.plot(x, y, 'r.-')
-        ax3.set_title('Square Root Plot')
-        self.canvas.draw_idle()
+#     def plot2(self):
+#         self.figure.clf()
+#         ax3 = self.figure.add_subplot(111)
+#         x = [i for i in range(100)]
+#         y = [i**0.5 for i in x]
+#         ax3.plot(x, y, 'r.-')
+#         ax3.set_title('Square Root Plot')
+#         self.canvas.draw_idle()
 
-    def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+#     def center(self):
+#         qr = self.frameGeometry()
+#         cp = QDesktopWidget().availableGeometry().center()
+#         qr.moveCenter(cp)
+#         self.move(qr.topLeft())
 
 
 class MainWindow(QMainWindow):
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         topRight = Color('green')
         bottomRight = Color('yellow')
         rightSplitter = QSplitter(QtCore.Qt.Vertical)
-        listWidget = self.createListWidget()
+        listWidget = self.createListWidget(leftWidget.graph)
         rightSplitter.addWidget(listWidget)
         rightSplitter.addWidget(bottomRight)
         rightStack = QVBoxLayout()
@@ -224,11 +224,11 @@ class MainWindow(QMainWindow):
         
         self.setCentralWidget(horizontalSplitter)
 
-    def createListWidget(self):
+    def createListWidget(self, graph):
         listWidget = QListWidget()
         listWidget.setAlternatingRowColor = True
-        listWidget.addItem("Foo")
-        listWidget.addItem("Bar")
+        for node in graph:
+            listWidget.addItem(str(node))
         return listWidget
 
     @Slot()
@@ -279,44 +279,44 @@ class Node(QGraphicsItem):
     def edges(self):
         return self.edgeList
 
-    def calculateForces(self):
-        if not self.scene() or self.scene().mouseGrabberItem() is self:
-            self.newPos = self.pos()
-            return
+    # def calculateForces(self):
+    #     if not self.scene() or self.scene().mouseGrabberItem() is self:
+    #         self.newPos = self.pos()
+    #         return
     
-        # Sum up all forces pushing this item away.
-        xvel = 0.0
-        yvel = 0.0
-        for item in self.scene().items():
-            if not isinstance(item, Node):
-                continue
+    #     # Sum up all forces pushing this item away.
+    #     xvel = 0.0
+    #     yvel = 0.0
+    #     for item in self.scene().items():
+    #         if not isinstance(item, Node):
+    #             continue
 
-            line = QtCore.QLineF(self.mapFromItem(item, 0, 0),
-                    QtCore.QPointF(0, 0))
-            dx = line.dx()
-            dy = line.dy()
-            l = 2.0 * (dx * dx + dy * dy)
-            if l > 0:
-                xvel += (dx * 150.0) / l
-                yvel += (dy * 150.0) / l
+    #         line = QtCore.QLineF(self.mapFromItem(item, 0, 0),
+    #                 QtCore.QPointF(0, 0))
+    #         dx = line.dx()
+    #         dy = line.dy()
+    #         l = 2.0 * (dx * dx + dy * dy)
+    #         if l > 0:
+    #             xvel += (dx * 150.0) / l
+    #             yvel += (dy * 150.0) / l
 
-        # Now subtract all forces pulling items together.
-        weight = (len(self.edgeList) + 1) * 10.0
-        for edge in self.edgeList:
-            if edge.sourceNode() is self:
-                pos = self.mapFromItem(edge.destNode(), 0, 0)
-            else:
-                pos = self.mapFromItem(edge.sourceNode(), 0, 0)
-            xvel += pos.x() / weight
-            yvel += pos.y() / weight
+    #     # Now subtract all forces pulling items together.
+    #     weight = (len(self.edgeList) + 1) * 10.0
+    #     for edge in self.edgeList:
+    #         if edge.sourceNode() is self:
+    #             pos = self.mapFromItem(edge.destNode(), 0, 0)
+    #         else:
+    #             pos = self.mapFromItem(edge.sourceNode(), 0, 0)
+    #         xvel += pos.x() / weight
+    #         yvel += pos.y() / weight
     
-        if QtCore.qAbs(xvel) < 0.1 and QtCore.qAbs(yvel) < 0.1:
-            xvel = yvel = 0.0
+    #     if QtCore.qAbs(xvel) < 0.1 and QtCore.qAbs(yvel) < 0.1:
+    #         xvel = yvel = 0.0
 
-        sceneRect = self.scene().sceneRect()
-        self.newPos = self.pos() + QtCore.QPointF(xvel, yvel)
-        self.newPos.setX(min(max(self.newPos.x(), sceneRect.left() + 10), sceneRect.right() - 10))
-        self.newPos.setY(min(max(self.newPos.y(), sceneRect.top() + 10), sceneRect.bottom() - 10))
+    #     sceneRect = self.scene().sceneRect()
+    #     self.newPos = self.pos() + QtCore.QPointF(xvel, yvel)
+    #     self.newPos.setX(min(max(self.newPos.x(), sceneRect.left() + 10), sceneRect.right() - 10))
+    #     self.newPos.setY(min(max(self.newPos.y(), sceneRect.top() + 10), sceneRect.bottom() - 10))
 
     def advance(self):
         if self.newPos == self.pos():
@@ -394,7 +394,7 @@ class GraphWidget(QGraphicsView):
         super(GraphWidget, self).__init__()
 
         self.timerId = 0
-
+        self.graph = graph
         scene = QGraphicsScene(self)
         scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         scene.setSceneRect(-200, -200, 400, 400)
@@ -412,12 +412,14 @@ class GraphWidget(QGraphicsView):
                 scene.addItem(nodeView)
             for neighbor in graph[node]:
                 if neighbor not in drawnNodes.keys():
-                    neighborView = Node(self, str(node))
+                    neighborView = Node(self, str(neighbor))
                     drawnNodes[neighbor] = neighborView
                     scene.addItem(neighborView)
                 edgeView = Edge(drawnNodes[node], drawnNodes[neighbor])
                 scene.addItem(edgeView)
-
+        for nodeData, nodeView in drawnNodes.items():
+            nodeView.setPos(0, nodeData.step*60)
+            
         self.scale(0.8, 0.8)
         self.setMinimumSize(400, 400)
         self.setWindowTitle("Elastic Nodes")
