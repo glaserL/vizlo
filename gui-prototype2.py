@@ -33,6 +33,8 @@ class Edge(QGraphicsItem):
         self.source.addEdge(self)
         self.dest.addEdge(self)
         self.adjust()
+        self._font = QtGui.QFont("times", 10)
+        self._fm = QtGui.QFontMetrics(self._font)
 
     def type(self):
         return Edge.Type
@@ -77,10 +79,12 @@ class Edge(QGraphicsItem):
 
         penWidth = 1.0
         extra = (penWidth + self.arrowSize) / 2.0
-
+        middle = QtCore.QPointF((self.sourcePoint + self.destPoint) / 2)
+        br_for_text = self._fm.boundingRect(self._rule)
+        br_for_text.moveTo(middle.x(), middle.y())
         return QtCore.QRectF(self.sourcePoint,
                 QtCore.QSizeF(self.destPoint.x() - self.sourcePoint.x(),
-                        self.destPoint.y() - self.sourcePoint.y())).normalized().adjusted(-extra, -extra, extra, extra)
+                        self.destPoint.y() - self.sourcePoint.y())).normalized().adjusted(-extra, -extra, extra, extra).united(br_for_text)
 
     def paint(self, painter, option, widget):
         if not self.source or not self.dest:
@@ -88,6 +92,11 @@ class Edge(QGraphicsItem):
 
         # Draw the line itself.
         line = QtCore.QLineF(self.sourcePoint, self.destPoint)
+        middle = QtCore.QPointF((self.sourcePoint + self.destPoint) / 2)
+        
+
+        middle.setX(self.source.boundingRect().x()+self.source.boundingRect().width())
+        
 
         if line.length() == 0.0:
             return
@@ -108,6 +117,8 @@ class Edge(QGraphicsItem):
         painter.setBrush(QtCore.Qt.black)
         
         painter.drawPolygon(QtGui.QPolygonF([line.p2(), destArrowP1, destArrowP2]))
+        
+        painter.drawText(middle,self._rule)
 
 class Color(QWidget):
     """Just for prototyping purposes"""
