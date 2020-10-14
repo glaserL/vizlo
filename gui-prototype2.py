@@ -20,9 +20,9 @@ class Edge(QGraphicsItem):
 
     Type = QGraphicsItem.UserType + 2
 
-    def __init__(self, sourceNode, destNode):
+    def __init__(self, sourceNode, destNode, rule = "N/A"):
         super(Edge, self).__init__()
-
+        self._rule = rule
         self.arrowSize = 10.0
         self.sourcePoint = QtCore.QPointF()
         self.destPoint = QtCore.QPointF()
@@ -99,19 +99,14 @@ class Edge(QGraphicsItem):
         # Draw the arrows if there's enough room.
         angle = math.acos(line.dx() / line.length())
         if line.dy() >= 0:
-            angle = Edge.TwoPi - angle
-
-        sourceArrowP1 = self.sourcePoint + QtCore.QPointF(math.sin(angle + Edge.Pi / 3) * self.arrowSize,
-                                                          math.cos(angle + Edge.Pi / 3) * self.arrowSize)
-        sourceArrowP2 = self.sourcePoint + QtCore.QPointF(math.sin(angle + Edge.Pi - Edge.Pi / 3) * self.arrowSize,
-                                                          math.cos(angle + Edge.Pi - Edge.Pi / 3) * self.arrowSize);   
+            angle = Edge.TwoPi - angle 
         destArrowP1 = self.destPoint + QtCore.QPointF(math.sin(angle - Edge.Pi / 3) * self.arrowSize,
                                                       math.cos(angle - Edge.Pi / 3) * self.arrowSize)
         destArrowP2 = self.destPoint + QtCore.QPointF(math.sin(angle - Edge.Pi + Edge.Pi / 3) * self.arrowSize,
                                                       math.cos(angle - Edge.Pi + Edge.Pi / 3) * self.arrowSize)
 
         painter.setBrush(QtCore.Qt.black)
-        painter.drawPolygon(QtGui.QPolygonF([line.p1(), sourceArrowP1, sourceArrowP2]))
+        
         painter.drawPolygon(QtGui.QPolygonF([line.p2(), destArrowP1, destArrowP2]))
 
 class Color(QWidget):
@@ -405,17 +400,17 @@ class GraphWidget(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         drawnNodes = {}
-        for node in graph:
+        for node, nbrsdict in graph.adjacency():
             if node not in drawnNodes.keys():
                 nodeView = Node(self, str(node))
                 drawnNodes[node] = nodeView
                 scene.addItem(nodeView)
-            for neighbor in graph[node]:
+            for neighbor, eattr in nbrsdict.items():
                 if neighbor not in drawnNodes.keys():
                     neighborView = Node(self, str(neighbor))
                     drawnNodes[neighbor] = neighborView
                     scene.addItem(neighborView)
-                edgeView = Edge(drawnNodes[node], drawnNodes[neighbor])
+                edgeView = Edge(drawnNodes[node], drawnNodes[neighbor], eattr["rule"])
                 scene.addItem(edgeView)
         for nodeData, nodeView in drawnNodes.items():
             nodeView.setPos(0, nodeData.step*60)
