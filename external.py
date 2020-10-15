@@ -26,7 +26,6 @@ def display_model_stack(model_stack, root_path):
     """This will display the generation stack of a model recursively"""
     if not os.path.exists(root_path):
         os.mkdir(root_path)
-    for adds, deletes in model_stack:
         
 
 def compute_diff(before, after):
@@ -59,9 +58,9 @@ solver = Solver()
 solving_history = []
 previous = []
 for rule in sample_input:
-    print(rule) # This isn't really correct? Use a SymbolicAtom I think
-
+    print(f"Adding rule {rule} to solver") # This isn't really correct? Use a SymbolicAtom I think
     solver.add(rule) # Add the rules that should now be 
+    print("Solving..")
     solver.solve()
     current = solver.stable_models()[0] # we enforce on normal (?) programs without multiple stablemodels right now
     diff = compute_diff(previous, current)
@@ -69,7 +68,7 @@ for rule in sample_input:
 
 print(solving_history)
 
-display_model_stack(solving_history, "stack")
+#display_model_stack(solving_history, "stack")
 
 
 # solving_history = []
