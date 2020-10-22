@@ -33,3 +33,7 @@ def test_early_stopping_of_solver():
         sr.step()
     graph = sr.graph
     assert len(graph) == 5
+
+def test_solver_state_is_hashable():
+    solver_state = solver.SolverState(None)
+    assert hash(solver_state)

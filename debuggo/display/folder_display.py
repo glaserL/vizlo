@@ -51,4 +51,5 @@ class GraphVisualizer(Visualizer):
             nx.draw(G, with_labels=True)
             plt.show()
             
-
+class PySideDisplay():
+    pass
