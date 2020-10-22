@@ -49,12 +49,11 @@ class SolveRunner():
     """
     Interacts with the clingo solver to produce a full solving history. 
     """
-    def __init__(self, program):
+    def __init__(self, program="", control=clingo.Control()):
         self.program = program
-        ctl = clingo.Control()
-        ctl.add("base", [], program)
+        control.add("base", [], program)
         print("Configured SolveRunner.")
-        self.ctl = ctl
+        self.ctl = control
         print("Performing initial grounding..",end="")
         self.ground()
         print(". DONE")
