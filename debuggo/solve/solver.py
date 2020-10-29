@@ -5,68 +5,20 @@ import logging
 
 
 
-class Solver():
-
-    def __init__(self, stable_models):
-        self.stable_models = stable_models
-
-    def get_branch(self, head, stable_models):
-        trues, falses = [], []
-        for stable_model in stable_models:
-            if head in stable_model:
-                trues.append(stable_model)
-            else:
-                falses.append(stable_model)
-        return trues, falses
-
-    def next_try(self, prev_stack_until_now, definition_history, i):
-        trues, falses = self.get_branch(definition_history[i], self.stable_models)
-        # abbruch bedingung
-        if i == len(definition_history) - 1:
-            final_paths = []
-            if len(trues):
-                new_path = prev_stack_until_now + [definition_history[i]]
-                final_paths.append(new_path)
-            if len(falses):
-                new_path = prev_stack_until_now + [f"not_{definition_history[i]}"]
-                final_paths.append(new_path)
-            return final_paths
-        else:
-            paths = []
-            if len(trues):
-                new_path = prev_stack_until_now + [definition_history[i]]
-                paths.extend(self.next_try(new_path, definition_history, i+1))
-            if len(falses):
-                new_path = prev_stack_until_now + [f"not_{definition_history[i]}"]
-                paths.extend(self.next_try(new_path, definition_history, i+1))
-            return paths
-
-    def generate_path(self, definition_history):
-        paths = self.next_try([], definition_history, 0)
-        return paths
-
-
 
 class SolveRunner():
     """
     Interacts with the clingo solver to produce a full solving history.
     """
-    def __init__(self, program="", control=clingo.Control()):
+    def __init__(self, program : str, control :clingo.Control):
         self.program = program
-        control.add("base", [], program)
-        print("Configured SolveRunner.")
         self.ctl = control
-        print("Performing initial grounding..",end="")
-        self.ground()
-        print(". DONE")
         self.graph: nx.Graph() = nx.DiGraph()
         self.isStable = False
         self.prev = None
         self.current_model = None
         self._step_count = 0
-
-    def ground(self):
-        self.ctl.ground([("base", [])])
+        self.has_reached_stable_model = False
 
     def update_externals(self, externals):
         for ext in externals:
@@ -83,6 +35,8 @@ class SolveRunner():
         self.prev = model
 
     def solver_has_reached_stable_model(self):
+        print(self.current_model)
+        print(self.prev)
         if self.current_model == self.prev:
             self.logger.error("Solver has reached a stable model.")
             return True
@@ -91,32 +45,43 @@ class SolveRunner():
             return False
 
     def step_until_stable(self):
-        while not self.solver_has_reached_stable_model():
+        while not self.has_reached_stable_model:
             self.step()
 
+    def update(self, model, atoms_to_update):
+        rule_edge = "??????"
+        new_solver_state = SolverState(model, self._step_count)
+        self.add_model_to_history(new_solver_state, rule_edge)
+        self.update_externals(atoms_to_update)
+        self._step_count += 1
+
     def step(self):
-        #ctl.solve(on_model=on_model)
+        current_model, atoms_to_update = self.get_changes_in_model()
+        if not self.has_reached_stable_model:
+            self.update(current_model, atoms_to_update)
+        if len(atoms_to_update) == 0:
+            self.has_reached_stable_model = True
+
+    def get_changes_in_model(self):
         true_externals = []
         rule_no_because_of_which_true_externals_are_true = -1
+        current_model = set()
         with self.ctl.solve(yield_=True) as handle:
             for m in handle:
                 symbols_in_model = m.symbols(atoms=True)
                 print(f"Found {len(symbols_in_model)} symbols in model.")
                 for symbol in symbols_in_model:
-                    # TODO: match expression here??
+                    # TODO: match expression here?? if we have more complex programs, below will be true for different things
                     if len(symbol.arguments)>0:
                         head = symbol.arguments[0]
-                        print(type(symbol.arguments[1].number))
+                        print(f"head: {head}")
                         rule_no_because_of_which_true_externals_are_true = symbol.arguments[1].number
                         true_externals.append(head)
-                #ctl.assign_external(clingo.String("d"),True)
-        self.current_model = SolverState(self.remove_holds_atoms_from_model(symbols_in_model), self._step_count)
-        if (not self.solver_has_reached_stable_model()):
+                    else:
+                        # This is the "real model" without meta atoms
+                        current_model.add(symbol)
+        return current_model, true_externals
 
-            self.add_model_to_history(self.current_model, self.program.split("\n")[rule_no_because_of_which_true_externals_are_true])
-
-            self.update_externals(true_externals)
-        self._step_count += 1
 
     def remove_holds_atoms_from_model(self, model):
         cleaned_model = set()
