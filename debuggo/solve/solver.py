@@ -22,7 +22,7 @@ class SolveRunner():
 
     def update_externals(self, externals):
         for ext in externals:
-            self.logger.info(f"Setting {ext.name} to {ext.positive}.")
+            print(f"Setting {ext.name} to {ext.positive}.")
             self.ctl.assign_external(ext, ext.positive)
 
     def add_model_to_history(self, model, rule):
@@ -38,7 +38,7 @@ class SolveRunner():
         print(self.current_model)
         print(self.prev)
         if self.current_model == self.prev:
-            self.logger.error("Solver has reached a stable model.")
+            print("Solver has reached a stable model.")
             return True
         else:
             print("Solving..")
