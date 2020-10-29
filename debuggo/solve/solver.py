@@ -1,6 +1,8 @@
 
 import clingo
 import networkx as nx
+import logging
+
 
 
 
@@ -98,7 +100,7 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, step = 0):
+    def __init__(self, model, step = -1):
         self.model = model
         self.step = step
 
