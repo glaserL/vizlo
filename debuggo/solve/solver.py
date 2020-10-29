@@ -8,22 +8,14 @@ class SolveRunner():
     """
     Interacts with the clingo solver to produce a full solving history.
     """
-    def __init__(self, program="", control=clingo.Control()):
+    def __init__(self, program : str, control :clingo.Control):
         self.program = program
-        control.add("base", [], program)
-        print("Configured SolveRunner.")
         self.ctl = control
-        print("Performing initial grounding..",end="")
-        self.ground()
-        print(". DONE")
         self.graph: nx.Graph() = nx.DiGraph()
         self.isStable = False
         self.prev = None
         self.current_model = None
         self._step_count = 0
-
-    def ground(self):
-        self.ctl.ground([("base", [])])
 
     def update_externals(self, externals):
         for ext in externals:
