@@ -318,7 +318,8 @@ class HeadlessPysideDisplay(PySideDisplay):
         _ = QApplication()
         super().__init__(graph)
 
-    def _grab_image(self):
+    def get_graph_as_np_array(self):
+        # TODO: Coloring looks different, fix?
         p = self.grab()
         img = p.toImage()
         width = img.width()

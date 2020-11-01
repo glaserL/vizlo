@@ -17,7 +17,7 @@ class Dingo(Control):
 
     def paint(self, model: Model) -> None:
         self.display = HeadlessPysideDisplay(self.solveRunner.graph)
-        return self.display._grab_image()
+        return self.display.get_graph_as_np_array()
 
     def add(self, name:str, parameters:List[str], program:str) -> None:
         # TODO: prettify this.

@@ -20,3 +20,7 @@ def test_paint_first_model():
     ctl.add("base", [], "a :- b.\nb.")
     ctl.solve()
     ctl.paint("")
+
+def test_app():
+    from debuggo.main import _main
+    _main()
