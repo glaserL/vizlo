@@ -306,29 +306,6 @@ class PySideDisplay(QGraphicsView):
 
         self.scale(scaleFactor, scaleFactor)
 
-    def _save_image(self, model):
-
-        # Get region of scene to capture from somewhere.
-        area = self.sceneRect()
-
-        # Create a QImage to render to and fix up a QPainter for it.
-        image = QImage(area.size().toSize(), QImage.Format_ARGB32)
-        painter = QPainter(image)
-        painter.device()  # <-- No idea why this helps!
-
-        # Render the region of interest to the QImage.
-        self.render(painter)
-        painter.end()
-        '''  Converts a QImage into an opencv MAT format  '''
-
-        incomingImage = image.convertToFormat(QtGui.QImage.Format.Format_ARGB32_Premultiplied )
-
-        width = incomingImage.width()
-        height = incomingImage.height()
-
-        ptr = incomingImage.constBits()
-        arr = np.array(ptr).reshape(height, width, 4)  # Copies the data
-        return arr
 
 
 class HeadlessPysideDisplay(PySideDisplay):
@@ -340,6 +317,16 @@ class HeadlessPysideDisplay(PySideDisplay):
     def __init__(self, graph):
         _ = QApplication()
         super().__init__(graph)
+
+    def _grab_image(self):
+        p = self.grab()
+        img = p.toImage()
+        width = img.width()
+        height = img.height()
+        ptr = img.constBits()
+        arr = np.array(ptr).reshape(height, width, 4)
+        return arr
+
 
 class Node(QGraphicsItem):
     Type = QGraphicsItem.UserType + 1
