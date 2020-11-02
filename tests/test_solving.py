@@ -52,3 +52,11 @@ def test_early_stopping_of_solver():
 def test_solver_state_is_hashable():
     solver_state = solver.SolverState(None)
     assert hash(solver_state)
+
+def test_minimal_solving_program():
+    prg = "a."
+    prg_reified = "h(a,1,()) :- a.\na.\n#external a."
+    sr = solver.SolveRunner(prg, create_ctl(prg_reified))
+    for _ in range(5):
+        sr.step()
+    assert (len(sr.graph)) == 2
