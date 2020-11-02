@@ -209,7 +209,9 @@ class Edge(QGraphicsItem):
         line = QtCore.QLineF(self.sourcePoint, self.destPoint)
         middle = QtCore.QPointF((self.sourcePoint + self.destPoint) / 2)
 
+        # Adjusting position of Rule text.
         middle.setX(self.source.boundingRect().x() + self.source.boundingRect().width())
+        middle.setY(middle.y()+self._fm.height())
 
         if line.length() == 0.0:
             return
@@ -261,7 +263,7 @@ class PySideDisplay(QGraphicsView):
                 edgeView = Edge(drawnNodes[node], drawnNodes[neighbor], eattr["rule"])
                 scene.addItem(edgeView)
         for nodeData, nodeView in drawnNodes.items():
-            nodeView.setPos(0, nodeData.step*60)
+            nodeView.setPos(0, nodeData.step*100)
             
         self.scale(0.8, 0.8)
         self.setMinimumSize(400, 400)
