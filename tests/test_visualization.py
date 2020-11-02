@@ -1,11 +1,11 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-from debuggo.display import folder_display
+from debuggo.display import graph
 from debuggo.solve.solver import SolverState
-from debuggo.display.folder_display import HeadlessPysideDisplay
+from debuggo.display.graph import HeadlessPysideDisplay
 def test_print_picture():
     graph = nx.DiGraph()
-    a = SolverState("a", 0)
+    a = SolverState("{a, b, c, d}", 0)
     b = SolverState("b", 1)
     graph.add_edge(a, b, rule="rule")
     display = HeadlessPysideDisplay(graph)

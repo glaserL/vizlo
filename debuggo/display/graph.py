@@ -308,8 +308,6 @@ class PySideDisplay(QGraphicsView):
 
         self.scale(scaleFactor, scaleFactor)
 
-
-
 class HeadlessPysideDisplay(PySideDisplay):
     """
     Creates an artificial QApplication as nothing can be rendered without it.

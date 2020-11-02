@@ -3,7 +3,7 @@ import sys
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
 from debuggo.transform.transform import HeadBodyTransformer
-from debuggo.display.folder_display import HeadlessPysideDisplay, PySideDisplay, MainWindow
+from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow
 from debuggo.solve.solver import SolveRunner
 from typing import List, Tuple, Any, Union
 
@@ -20,14 +20,14 @@ class Dingo(Control):
         self.display = HeadlessPysideDisplay(self.solveRunner.graph)
         return self.display.get_graph_as_np_array()
 
-    def add(self, name: str, parameters: List[str], program: str, **kwargs) -> None:
+    def add(self, name: str, parameters: List[str], program: str) -> None:
         # TODO: prettify this.
-        self.control.add(name, parameters, program, kwargs)
+        self.control.add(name, parameters, program)
         _ = self.transformer.transform(program)
         self.solveRunner.program = program
         reified_program = self.transformer.get_reified_program_as_str()
         print(reified_program)
-        self.debuggo.add(name, parameters, reified_program, kwargs)
+        self.debuggo.add(name, parameters, reified_program)
 
     def ground(self, parts: List[Tuple[str, List[Symbol]]], context: Any = None) -> None:
         print("Grounding..")

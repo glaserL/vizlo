@@ -1,5 +1,5 @@
 from debuggo.solve import solver
-from debuggo.display import folder_display
+from debuggo.display import graph
 from debuggo.main import Dingo
 ## Transformer
 def test_networkx():
@@ -9,7 +9,7 @@ def test_networkx():
     for _ in range(5):
         print(".",end="")
         sr.step()
-    viz = folder_display.GraphVisualizer(sr.graph)
+    viz = graph.GraphVisualizer(sr.graph)
     viz.draw_networkx_graph()
     
 def test_instanciation():
