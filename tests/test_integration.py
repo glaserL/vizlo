@@ -18,4 +18,5 @@ def test_instanciation():
 def test_paint_first_model():
     ctl = Dingo()
     ctl.add("base", [], "a :- b.\nb.")
-    ctl.solve(on_model = lambda m : ctl.paint(m))
+    ctl.solve()
+    ctl.paint("")

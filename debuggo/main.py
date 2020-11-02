@@ -49,7 +49,7 @@ def _main():
     with open("../tests/program_transformed_holds.lp", encoding="utf-8") as f:
         reified_program = "".join(f.readlines())
     ctl = Dingo()
-    ctl.add("base", [], "a :- b.\nb.", )
+    ctl.add("base", [], "a :- b.\nb.")
     ctl.ground([("base", [])])
     sat = ctl.solve()
 

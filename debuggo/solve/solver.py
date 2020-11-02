@@ -1,6 +1,8 @@
 
 import clingo
 import networkx as nx
+import logging
+
 
 
 
@@ -46,17 +48,19 @@ class SolveRunner():
         while not self.has_reached_stable_model:
             self.step()
 
-    def update(self, model, atoms_to_update):
-        rule_edge = "??????"
+    def update(self, model, atoms_to_update, rule_nr):
+        rule_edge = self.program.split("\n")[rule_nr-1]
+        print(model)
+        print(atoms_to_update)
         new_solver_state = SolverState(model, self._step_count)
         self.add_model_to_history(new_solver_state, rule_edge)
         self.update_externals(atoms_to_update)
         self._step_count += 1
 
     def step(self):
-        current_model, atoms_to_update = self.get_changes_in_model()
+        current_model, atoms_to_update, rule_nr = self.get_changes_in_model()
         if not self.has_reached_stable_model:
-            self.update(current_model, atoms_to_update)
+            self.update(current_model, atoms_to_update, rule_nr)
         if len(atoms_to_update) == 0:
             self.has_reached_stable_model = True
 
@@ -78,7 +82,7 @@ class SolveRunner():
                     else:
                         # This is the "real model" without meta atoms
                         current_model.add(symbol)
-        return current_model, true_externals
+        return current_model, true_externals, rule_no_because_of_which_true_externals_are_true
 
 
     def remove_holds_atoms_from_model(self, model):
@@ -98,7 +102,7 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, step = 0):
+    def __init__(self, model, step = -1):
         self.model = model
         self.step = step
 
