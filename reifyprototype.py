@@ -87,9 +87,7 @@ def main(prg):
         t = TermTransformer()
         clingo.parse_program(
             open("tests/program.lp").read(),
-            lambda stm: b.add(
-                t.visit(stm)
-                )) # stm mean line in code
+            lambda stm: b.add(t.visit(stm),,) # stm mean line in code
     prg.ground([("base", [])])
     prg.solve()
 
