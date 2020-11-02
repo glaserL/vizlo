@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from PySide2 import QtGui, QtCore
-from PySide2.QtCore import Slot
+from PySide2.QtCore import Slot, QRect, Qt, QPoint
 from PySide2.QtGui import QImage, QPainter
 from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QStyle, QApplication, QHBoxLayout, \
     QMainWindow, QAction, QSplitter, QVBoxLayout, QWidget, QListWidget
@@ -395,11 +395,13 @@ class Node(QGraphicsItem):
 
         painter.setBrush(QtGui.QBrush(gradient))
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 0))
-        painter.drawEllipse(-10, -10, 50, 50)
-        boundingRectForText = metrics.boundingRect(self.name)
-        painter.drawText(QtCore.QPointF(), self.name)
+        center = QRect(-10, -10, 50, 50)
+        painter.drawEllipse(center)
+        textAreaLeft = QPoint(center.left()+2,((center.bottomLeft().y()+center.topLeft().y()) / 2)+metrics.height()/2)
+        elided = metrics.elidedText(self.name, Qt.ElideLeft, center.width())
 
-        # painter.drawEllipse(self.boundingRect())
+        painter.drawText(textAreaLeft, elided)
+
         print(f"Painted name {self.name}")
 
     def itemChange(self, change, value):
