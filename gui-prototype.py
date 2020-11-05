@@ -2,7 +2,7 @@
 import sys
 from debuggo.solve.solver import SolveRunner
 import networkx as nx
-from debuggo.display.folder_display import GraphVisualizer
+from debuggo.display.graph import GraphVisualizer
 from PySide2.QtCore import Qt, Slot
 from PySide2.QtGui import QPainter
 from PySide2.QtWidgets import (QAction, QApplication, QHeaderView, QHBoxLayout, QLabel, QLineEdit,
