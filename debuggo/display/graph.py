@@ -11,6 +11,8 @@ from PySide2.QtGui import QImage, QPainter
 from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QStyle, QApplication, QHBoxLayout, \
     QMainWindow, QAction, QSplitter, QVBoxLayout, QWidget, QListWidget
 
+from debuggo.solve.solver import SolverState
+
 
 class Color(QWidget):
     """Just for prototyping purposes"""
@@ -250,6 +252,18 @@ class PySideDisplay(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         drawnNodes = {}
+        # ({}, 0) - [{'rule': 'a.'}] > ({a}, 1)
+        # ({a}, 1) - [{'rule': '{b} :- a.'}] > ({a, b}, 2)
+        # ({a}, 1) - [{'rule': '{b} :- a.'}] > ({a}, 2)
+        # layer = 0
+        # ROOT = SolverState("{}",0)
+        # for node, target in nx.bfs_edges(graph, SolverState()):
+        #     if node not in drawnNodes.keys():
+        #         nodeView = Node(self, str(node))
+        #         drawnNodes[node] = nodeView
+        #         scene.addItem(nodeView)
+        #
+        #     print(f"{node, node.step} -[{g[node][target]}]> {target, target.step}")
         for node, nbrsdict in graph.adjacency():
             if node not in drawnNodes.keys():
                 nodeView = Node(self, str(node))
@@ -263,7 +277,7 @@ class PySideDisplay(QGraphicsView):
                 edgeView = Edge(drawnNodes[node], drawnNodes[neighbor], eattr["rule"])
                 scene.addItem(edgeView)
         for nodeData, nodeView in drawnNodes.items():
-            nodeView.setPos(0, nodeData.step*100)
+            nodeView.setPos(nodeData.path*100, nodeData.step*100)
             
         self.scale(0.8, 0.8)
         self.setMinimumSize(400, 400)
