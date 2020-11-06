@@ -2,11 +2,43 @@ import sys
 
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
-from debuggo.transform.transform import HeadBodyTransformer
+from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
 from debuggo.display.folder_display import HeadlessPysideDisplay, PySideDisplay, MainWindow
-from debuggo.solve.solver import SolveRunner
+from debuggo.solve.solver import SolveRunner, AnotherOne
 from typing import List, Tuple, Any, Union
 
+
+
+
+class Debuggo(Control):
+    def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20):
+        self.control = Control(arguments, logger, message_limit)
+        self.transformer = JustTheRulesTransformer()
+
+    def ground(self, parts: List[Tuple[str, List[Symbol]]], context: Any = None) -> None:
+        self.control.ground(parts, context)
+
+    def solve(self, assumptions: List[Union[Tuple[Symbol, bool], int]] = [],
+              on_model=None,
+              on_statistics=None,
+              on_finish=None,
+              yield_: bool = False,
+              async_: bool = False) -> Union[SolveHandle, SolveResult]:
+        return self.control.solve(assumptions, on_model, on_statistics, on_finish, yield_, async_)
+
+    def add(self, name: str, parameters: List[str], program: str) -> None:
+        self.control.add(name, parameters, program)
+        _ = self.transformer.transform(program)
+        reified_program = self.transformer.get_reified_program_as_str()
+        self.anotherOne = AnotherOne(reified_program)
+
+    def paint(self):
+        if self.anotherOne:
+            g = self.anotherOne.make_graph()
+            printer = HeadlessPysideDisplay(g)
+            return printer.get_graph_as_np_array()
+        else:
+            print("NO SOLVE RUNNER")
 
 class Dingo(Control):
 
