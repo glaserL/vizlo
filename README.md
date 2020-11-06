@@ -8,3 +8,17 @@ Debugging module for clingo
 
 
 # Approach
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    for model in ctl.solve(_yield=True):
+        if model.hasSomeThingSpecial():
+            ctl.addToPainter(model)
+            # TODO 1: Paint all of them nicely
+            # TODO 2: Paint one or some of them
+            # TODO 3: Handle recursion with special input
+            # TODO 4: Resort them based on dependency
+            # TODO 5: Handle recursion without special input
+
+        ctl.paintModels()
+    img = ctl.paint()
+    ctl._show(img)
