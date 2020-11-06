@@ -265,11 +265,13 @@ class PySideDisplay(QGraphicsView):
         #
         #     print(f"{node, node.step} -[{g[node][target]}]> {target, target.step}")
         for node, nbrsdict in graph.adjacency():
+            node = node[1]
             if node not in drawnNodes.keys():
                 nodeView = Node(self, str(node))
                 drawnNodes[node] = nodeView
                 scene.addItem(nodeView)
             for neighbor, eattr in nbrsdict.items():
+                neighbor = neighbor[1]
                 if neighbor not in drawnNodes.keys():
                     neighborView = Node(self, str(neighbor))
                     drawnNodes[neighbor] = neighborView

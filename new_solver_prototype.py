@@ -50,7 +50,7 @@ prg = [
 "{r;t} :- q.",
 ":- r."
 ]
-prg = ["a.", "{b} :- a.", "c :- b."]
+prg = ["a.", "{b} :- a.", "c :- b.", " :- c."]
 def find_nodes_at_timestep(G, step):
     nodes = []
     for node in g:

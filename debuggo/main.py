@@ -2,11 +2,11 @@ import sys
 
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
-from debuggo.transform.transform import HeadBodyTransformer
+from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
 from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow
-from debuggo.solve.solver import SolveRunner
+from debuggo.solve.solver import SolveRunner, AnotherOne, annotate_edges_in_nodes, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union
-
+import matplotlib.pyplot as plt
 
 
 
@@ -28,17 +28,28 @@ class Debuggo(Control):
 
     def add(self, name: str, parameters: List[str], program: str) -> None:
         self.control.add(name, parameters, program)
-        _ = self.transformer.transform(program)
-        reified_program = self.transformer.get_reified_program_as_str()
-        self.anotherOne = AnotherOne(reified_program)
+        rules = self.transformer.transform(program)
+        self.anotherOne = AnotherOne(rules)
+        print(f"Created {len(rules)} rules:\n{rules}")
 
     def paint(self):
         if self.anotherOne:
             g = self.anotherOne.make_graph()
-            printer = HeadlessPysideDisplay(g)
-            return printer.get_graph_as_np_array()
+            annotate_edges_in_nodes(g, (0,INITIAL_EMPTY_SET))
+            print(f"Painting graph with {len(g)} nodes.")
+            display = HeadlessPysideDisplay(g)
+            pic = display.get_graph_as_np_array()
+            return pic
         else:
             print("NO SOLVE RUNNER")
+
+    def _show(self, pic):
+        if len(pic):
+            plt.imshow(pic)
+            plt.show()
+        else:
+            print("PIC IS NONE")
+
 
 class Dingo(Control):
 
@@ -78,25 +89,24 @@ class Dingo(Control):
 
 
 def _main():
-    with open("../tests/program_transformed_holds.lp", encoding="utf-8") as f:
-        reified_program = "".join(f.readlines())
-    ctl = Dingo()
-    ctl.add("base", [], "a :- b.\nb.")
-    ctl.ground([("base", [])])
-    sat = ctl.solve()
+    prg = "s(1..2). {b} :- s(X), X == 2. c :- b. :- c."
+    ctl = Debuggo()
 
-    G = ctl.solveRunner.graph
-    app = QApplication(sys.argv)
-
-    layout = QHBoxLayout()
-    w = PySideDisplay(G)
-    # QWidget
-
-    # QMainWindow using QWidget as central widget
-    window = MainWindow(w)
-
-    window.show()
-    sys.exit(app.exec_())
+    #
+    # g = ctl.anotherOne.make_graph()
+    # annotate_edges_in_nodes(g, (0, INITIAL_EMPTY_SET))
+    #
+    # app = QApplication(sys.argv)
+    #
+    # layout = QHBoxLayout()
+    # w = PySideDisplay(g)
+    # # QWidget
+    #
+    # # QMainWindow using QWidget as central widget
+    # window = MainWindow(w)
+    #
+    # window.show()
+    # sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

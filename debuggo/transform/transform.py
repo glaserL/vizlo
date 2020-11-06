@@ -242,7 +242,6 @@ class HeadBodyTransformer(Transformer):
 
     def transform(self, program):
         prg = clingo.Control()
-        print
         with prg.builder() as b:
             t = HeadBodyTransformer()
             clingo.parse_program(
@@ -277,4 +276,19 @@ class HeadBodyTransformer(Transformer):
 
 
 class JustTheRulesTransformer(Transformer):
-    pass
+
+    def transform(self, program):
+        prg = clingo.Control()
+        rules = []
+        with prg.builder() as b:
+            t = JustTheRulesTransformer()
+            clingo.parse_program(
+                program,
+                lambda stm: self.funcy(rules, t, stm))
+        return rules
+
+    def funcy(self, rules, t, stm):
+        rule = t.visit(stm)
+        if not str(rule).startswith("#"):
+            rules.append(rule)
+

@@ -7,8 +7,10 @@ import logging
 class AnotherOne():
 
     def __init__(self, program : [str]): # TODO: Change this to clingo.Rule
-        self.prg = program
+        self.prg = [str(rule) for rule in program]
+        print(f"Created AnotherOne with {len(self.prg)} rules.")
         self._g : nx.Graph = nx.DiGraph()
+
 
     def find_nodes_at_timestep(self, step):
         nodes = []
@@ -37,8 +39,10 @@ class AnotherOne():
             s.falses = falses
 
     def make_graph(self):
+
         # TODO: REFACTOR THIS FUCKING ABOMINATION
-        self._g.add_node((0,SolverState([])))
+
+        self._g.add_node((0,INITIAL_EMPTY_SET))
         current_prg = []
         for i, rule in enumerate(self.prg):
             print(f"Adding rule {rule}")
@@ -46,6 +50,7 @@ class AnotherOne():
             ctl = clingo.Control("0")
             ctl.add("base", [], "\n".join(current_prg))
             ctl.ground([("base", [])])
+            # analytically find recursive components and add them at once
             assumptions = self.find_nodes_at_timestep(i)
             print(f"{rule} with {len(assumptions)} assumpts.")
             for assmpts in assumptions:
@@ -57,7 +62,7 @@ class AnotherOne():
                     hacky_counter = 0
                     for m in handle:
                         print("!")
-                        syms = SolverState(m.symbols(atoms=True))
+                        syms = SolverState(m.symbols(atoms=True), i)
                         print(f"({assmpts})-[{rule}]->({(i + 1, syms)})")
                         solver_states_to_create.append(syms)
                         hacky_counter += 1
@@ -186,3 +191,22 @@ class SolverState():
 
     def __hash__(self):
         return id(self)
+
+
+def annotate_edges_in_nodes(g, begin):
+    path_id = 0
+    prev_step = 0
+    for node in nx.bfs_tree(g, begin):
+        node = node[1]
+        if prev_step != node.step:
+            print(f"Resetting {path_id}.")
+            path_id = 0
+        print(f"Setting {path_id}")
+        node.path = path_id
+        prev_step = node.step
+        path_id += 1
+    for node, target in nx.dfs_edges(g, begin):
+        print(f"{node, node[1].step, node[1].path} -[{g[node][target]}]> {target, target[1].step, node[1].path}")
+    return g
+
+INITIAL_EMPTY_SET = SolverState(set(), 0)

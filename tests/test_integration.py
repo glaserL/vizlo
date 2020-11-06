@@ -1,6 +1,8 @@
 from debuggo.solve import solver
 from debuggo.display import graph
-from debuggo.main import Dingo
+from debuggo.main import Dingo, Debuggo
+
+
 ## Transformer
 def test_networkx():
     with open("tests/program_transformed_holds.lp", encoding="utf-8") as f:
@@ -14,6 +16,11 @@ def test_networkx():
     
 def test_instanciation():
     dingo = Dingo()
+
+def test_anotherOne():
+    ctl = Debuggo()
+    img = ctl.add("base", [], "a. {b} :- a. c :- b.")
+    ctl._show(img)
 
 def test_paint_first_model():
     ctl = Dingo()
