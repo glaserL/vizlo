@@ -5,6 +5,11 @@ import logging
 
 
 
+class StupidRunner():
+    def __init__(self, rules : [str]):
+        self.prg = rules
+        self.graph: nx.Graph() = nx.DiGraph()
+
 
 class SolveRunner():
     """
@@ -102,9 +107,10 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, step = -1):
+    def __init__(self, model, step = -1,falses=set()):
         self.model = model
         self.step = step
+        self.falses = falses
 
     def __repr__(self):
         return f"{self.model}"
