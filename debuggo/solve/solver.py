@@ -4,6 +4,70 @@ import networkx as nx
 import logging
 
 
+class AnotherOne():
+
+    def __init__(self, program : [str]): # TODO: Change this to clingo.Rule
+        self.prg = program
+        self._g : nx.Graph = nx.DiGraph()
+
+    def find_nodes_at_timestep(self, step):
+        nodes = []
+        for node in self._g:
+            if node[0] == step:
+                nodes.append(node)
+        return nodes
+
+    # TODO: move this into solverstate class?
+    def create_true_symbols_from_solver_state(self, s):
+        syms = []
+        for true in s.model:
+            syms.append((true, True))
+        for false in s.falses:
+            syms.append((false, False))
+        return syms
+
+    # TODO: move this into solverstate class as a classmethod?
+    def update_falses_in_solver_states(self, sss):
+        all_possible = set()
+        for s in sss:
+            all_possible.update(s.model)
+        print(all_possible)
+        for s in sss:
+            falses = all_possible - set(s.model)
+            s.falses = falses
+
+    def make_graph(self):
+        # TODO: REFACTOR THIS FUCKING ABOMINATION
+        self._g.add_node((0,SolverState([])))
+        current_prg = []
+        for i, rule in enumerate(self.prg):
+            print(f"Adding rule {rule}")
+            current_prg.append(rule)
+            ctl = clingo.Control("0")
+            ctl.add("base", [], "\n".join(current_prg))
+            ctl.ground([("base", [])])
+            assumptions = self.find_nodes_at_timestep(i)
+            print(f"{rule} with {len(assumptions)} assumpts.")
+            for assmpts in assumptions:
+                print(f"Continuing with {assmpts}")
+                assumpts = self.create_true_symbols_from_solver_state(assmpts[1])
+                print(f"Assumptions: {assumpts}")
+                with ctl.solve(assumptions=assumpts, yield_=True) as handle:
+                    solver_states_to_create = []
+                    hacky_counter = 0
+                    for m in handle:
+                        print("!")
+                        syms = SolverState(m.symbols(atoms=True))
+                        print(f"({assmpts})-[{rule}]->({(i + 1, syms)})")
+                        solver_states_to_create.append(syms)
+                        hacky_counter += 1
+                    if hacky_counter == 0:
+                        # HACK: This means the candidate model became conflicting.
+                        solver_states_to_create.append(SolverState(set()))
+                    self.update_falses_in_solver_states(solver_states_to_create)
+                    for ss in solver_states_to_create:
+                        self._g.add_edge(assmpts, (i + 1, ss), rule=rule)
+        return self._g
 
 
 class SolveRunner():
@@ -102,9 +166,10 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, step = -1):
+    def __init__(self, model, step = -1, falses = set()):
         self.model = model
         self.step = step
+        self.falses = falses
 
     def __repr__(self):
         return f"{self.model}"

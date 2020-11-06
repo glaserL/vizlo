@@ -35,6 +35,11 @@ def test_until_stable():
     graph = sr.graph
     assert len(graph) == 5
 
+def test_new_solver():
+    anotherOne = solver.AnotherOne(["a.", "{b} :- a.", "c :- b."])
+    g = anotherOne.make_graph()
+    assert len(g) == 6
+
 
 def test_has_reached_stable_model_function():
     one = solver.SolverState(set(["A","B"]))

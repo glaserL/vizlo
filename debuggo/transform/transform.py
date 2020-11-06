@@ -273,3 +273,8 @@ class HeadBodyTransformer(Transformer):
         prg_as_str = "\n".join([str(x) for x in self._reified_program])
         print(prg_as_str)
         return prg_as_str
+
+
+
+class JustTheRulesTransformer(Transformer):
+    pass
