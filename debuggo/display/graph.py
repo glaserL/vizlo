@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from PySide2 import QtGui, QtCore
-from PySide2.QtCore import Slot
+from PySide2.QtCore import Slot, QRect, Qt, QPoint
 from PySide2.QtGui import QImage, QPainter
 from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QStyle, QApplication, QHBoxLayout, \
     QMainWindow, QAction, QSplitter, QVBoxLayout, QWidget, QListWidget
+
+from debuggo.solve.solver import SolverState
 
 
 class Color(QWidget):
@@ -209,7 +211,9 @@ class Edge(QGraphicsItem):
         line = QtCore.QLineF(self.sourcePoint, self.destPoint)
         middle = QtCore.QPointF((self.sourcePoint + self.destPoint) / 2)
 
+        # Adjusting position of Rule text.
         middle.setX(self.source.boundingRect().x() + self.source.boundingRect().width())
+        middle.setY(middle.y()+self._fm.height())
 
         if line.length() == 0.0:
             return
@@ -248,6 +252,18 @@ class PySideDisplay(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         drawnNodes = {}
+        # ({}, 0) - [{'rule': 'a.'}] > ({a}, 1)
+        # ({a}, 1) - [{'rule': '{b} :- a.'}] > ({a, b}, 2)
+        # ({a}, 1) - [{'rule': '{b} :- a.'}] > ({a}, 2)
+        # layer = 0
+        # ROOT = SolverState("{}",0)
+        # for node, target in nx.bfs_edges(graph, SolverState()):
+        #     if node not in drawnNodes.keys():
+        #         nodeView = Node(self, str(node))
+        #         drawnNodes[node] = nodeView
+        #         scene.addItem(nodeView)
+        #
+        #     print(f"{node, node.step} -[{g[node][target]}]> {target, target.step}")
         for node, nbrsdict in graph.adjacency():
             if node not in drawnNodes.keys():
                 nodeView = Node(self, str(node))
@@ -261,7 +277,7 @@ class PySideDisplay(QGraphicsView):
                 edgeView = Edge(drawnNodes[node], drawnNodes[neighbor], eattr["rule"])
                 scene.addItem(edgeView)
         for nodeData, nodeView in drawnNodes.items():
-            nodeView.setPos(0, nodeData.step*60)
+            nodeView.setPos(nodeData.path*100, nodeData.step*100)
             
         self.scale(0.8, 0.8)
         self.setMinimumSize(400, 400)
@@ -306,31 +322,6 @@ class PySideDisplay(QGraphicsView):
 
         self.scale(scaleFactor, scaleFactor)
 
-    def _save_image(self, model):
-
-        # Get region of scene to capture from somewhere.
-        area = self.sceneRect()
-
-        # Create a QImage to render to and fix up a QPainter for it.
-        image = QImage(area.size().toSize(), QImage.Format_ARGB32)
-        painter = QPainter(image)
-        painter.device()  # <-- No idea why this helps!
-
-        # Render the region of interest to the QImage.
-        self.render(painter)
-        painter.end()
-        '''  Converts a QImage into an opencv MAT format  '''
-
-        incomingImage = image.convertToFormat(QtGui.QImage.Format.Format_ARGB32_Premultiplied )
-
-        width = incomingImage.width()
-        height = incomingImage.height()
-
-        ptr = incomingImage.constBits()
-        arr = np.array(ptr).reshape(height, width, 4)  # Copies the data
-        return arr
-
-
 class HeadlessPysideDisplay(PySideDisplay):
     """
     Creates an artificial QApplication as nothing can be rendered without it.
@@ -340,6 +331,17 @@ class HeadlessPysideDisplay(PySideDisplay):
     def __init__(self, graph):
         _ = QApplication()
         super().__init__(graph)
+
+    def get_graph_as_np_array(self):
+        # TODO: Coloring looks different, fix?
+        p = self.grab()
+        img = p.toImage()
+        width = img.width()
+        height = img.height()
+        ptr = img.constBits()
+        arr = np.array(ptr).reshape(height, width, 4)
+        return arr
+
 
 class Node(QGraphicsItem):
     Type = QGraphicsItem.UserType + 1
@@ -405,11 +407,13 @@ class Node(QGraphicsItem):
 
         painter.setBrush(QtGui.QBrush(gradient))
         painter.setPen(QtGui.QPen(QtCore.Qt.black, 0))
-        painter.drawEllipse(-10, -10, 50, 50)
-        boundingRectForText = metrics.boundingRect(self.name)
-        painter.drawText(QtCore.QPointF(), self.name)
+        center = QRect(-10, -10, 50, 50)
+        painter.drawEllipse(center)
+        textAreaLeft = QPoint(center.left()+2,((center.bottomLeft().y()+center.topLeft().y()) / 2)+metrics.height()/2)
+        elided = metrics.elidedText(self.name, Qt.ElideLeft, center.width())
 
-        # painter.drawEllipse(self.boundingRect())
+        painter.drawText(textAreaLeft, elided)
+
         print(f"Painted name {self.name}")
 
     def itemChange(self, change, value):

@@ -2,9 +2,9 @@ import sys
 
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
-from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
-from debuggo.display.folder_display import HeadlessPysideDisplay, PySideDisplay, MainWindow
-from debuggo.solve.solver import SolveRunner, AnotherOne
+from debuggo.transform.transform import HeadBodyTransformer
+from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow
+from debuggo.solve.solver import SolveRunner
 from typing import List, Tuple, Any, Union
 
 
@@ -50,7 +50,7 @@ class Dingo(Control):
 
     def paint(self, model: Model) -> None:
         self.display = HeadlessPysideDisplay(self.solveRunner.graph)
-        return self.display._save_image(model)
+        return self.display.get_graph_as_np_array()
 
     def add(self, name: str, parameters: List[str], program: str) -> None:
         # TODO: prettify this.

@@ -6,3 +6,5 @@ Debugging module for clingo
 * Execute the program and record a "solver history", currently it's just a path but with choice rules etc. we get a tree.
 * Visualize this in some way.
 
+
+# Approach

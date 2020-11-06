@@ -1,5 +1,5 @@
 from debuggo.solve import solver
-from debuggo.display import folder_display
+from debuggo.display import graph
 def main():
 
     stable_models = [["d"], ["d", "c"], ["d", "c", "b"], ["d", "c", "b", "a"]]
@@ -11,7 +11,7 @@ def main():
 
     paths = s.generate_path(definition_history)
     
-    v = folder_display.FolderVisualizer(paths, root)
+    v = graph.FolderVisualizer(paths, root)
     
     return v.write_paths(paths)
 
