@@ -35,7 +35,7 @@ class Debuggo(Control):
     def paint(self):
         if self.anotherOne:
             g = self.anotherOne.make_graph()
-            annotate_edges_in_nodes(g, (0,INITIAL_EMPTY_SET))
+            annotate_edges_in_nodes(g, INITIAL_EMPTY_SET)
             print(f"Painting graph with {len(g)} nodes.")
             display = HeadlessPysideDisplay(g)
             pic = display.get_graph_as_np_array()
@@ -89,9 +89,13 @@ class Dingo(Control):
 
 
 def _main():
-    prg = "s(1..2). {b} :- s(X), X == 2. c :- b. :- c."
+    prg = "a. {b} :- a."
     ctl = Debuggo()
+    ctl.add("base", [], prg)
+    x = ctl.paint()
 
+    plt.imshow(x)
+    plt.show()
     #
     # g = ctl.anotherOne.make_graph()
     # annotate_edges_in_nodes(g, (0, INITIAL_EMPTY_SET))

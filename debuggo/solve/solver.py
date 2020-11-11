@@ -4,6 +4,31 @@ import networkx as nx
 import logging
 
 
+class SolverState():
+    """
+    Represents a single solver state that is created during execution.
+    A SolverState consists of the current stable model, what became true and what became false
+    after the last step.
+
+    TODO: Also try to represent multi-model stable models
+    """
+
+    def __init__(self, model, step = -1, falses=set()):
+        self.model = model
+        self.step = step
+        self.falses = falses
+
+    def __repr__(self):
+        return f"{self.model}"
+
+    def __eq__(self, other):
+        if isinstance(other, SolverState):
+            return self.model == other.model
+        return False
+
+    def __hash__(self):
+        return id(self)
+
 class AnotherOne():
 
     def __init__(self, program : [str]): # TODO: Change this to clingo.Rule
@@ -12,10 +37,10 @@ class AnotherOne():
         self._g : nx.Graph = nx.DiGraph()
 
 
-    def find_nodes_at_timestep(self, step):
+    def find_nodes_at_timestep(self, step : int):
         nodes = []
         for node in self._g:
-            if node[0] == step:
+            if node.step == step:
                 nodes.append(node)
         return nodes
 
@@ -42,7 +67,7 @@ class AnotherOne():
 
         # TODO: REFACTOR THIS FUCKING ABOMINATION
 
-        self._g.add_node((0,INITIAL_EMPTY_SET))
+        self._g.add_node(INITIAL_EMPTY_SET)
         current_prg = []
         for i, rule in enumerate(self.prg):
             print(f"Adding rule {rule}")
@@ -55,14 +80,14 @@ class AnotherOne():
             print(f"{rule} with {len(assumptions)} assumpts.")
             for assmpts in assumptions:
                 print(f"Continuing with {assmpts}")
-                assumpts = self.create_true_symbols_from_solver_state(assmpts[1])
+                assumpts = self.create_true_symbols_from_solver_state(assmpts)
                 print(f"Assumptions: {assumpts}")
                 with ctl.solve(assumptions=assumpts, yield_=True) as handle:
                     solver_states_to_create = []
                     hacky_counter = 0
                     for m in handle:
                         print("!")
-                        syms = SolverState(m.symbols(atoms=True), i)
+                        syms = SolverState(m.symbols(atoms=True), i+1)
                         print(f"({assmpts})-[{rule}]->({(i + 1, syms)})")
                         solver_states_to_create.append(syms)
                         hacky_counter += 1
@@ -71,7 +96,7 @@ class AnotherOne():
                         solver_states_to_create.append(SolverState(set()))
                     self.update_falses_in_solver_states(solver_states_to_create)
                     for ss in solver_states_to_create:
-                        self._g.add_edge(assmpts, (i + 1, ss), rule=rule)
+                        self._g.add_edge(assmpts, ss, rule=rule)
         return self._g
 
 class StupidRunner():
@@ -167,37 +192,11 @@ class SolveRunner():
         return cleaned_model
 
 
-class SolverState():
-    """
-    Represents a single solver state that is created during execution.
-    A SolverState consists of the current stable model, what became true and what became false
-    after the last step.
-
-    TODO: Also try to represent multi-model stable models
-    """
-
-    def __init__(self, model, step = -1,falses=set()):
-        self.model = model
-        self.step = step
-        self.falses = falses
-
-    def __repr__(self):
-        return f"{self.model}"
-
-    def __eq__(self, other):
-        if isinstance(other, SolverState):
-            return self.model == other.model
-        return False
-
-    def __hash__(self):
-        return id(self)
-
 
 def annotate_edges_in_nodes(g, begin):
     path_id = 0
     prev_step = 0
     for node in nx.bfs_tree(g, begin):
-        node = node[1]
         if prev_step != node.step:
             print(f"Resetting {path_id}.")
             path_id = 0
@@ -206,7 +205,7 @@ def annotate_edges_in_nodes(g, begin):
         prev_step = node.step
         path_id += 1
     for node, target in nx.dfs_edges(g, begin):
-        print(f"{node, node[1].step, node[1].path} -[{g[node][target]}]> {target, target[1].step, node[1].path}")
+        print(f"{node, node.step, node.path} -[{g[node][target]}]> {target, target.step, node.path}")
     return g
 
-INITIAL_EMPTY_SET = SolverState(set(), 0)
+INITIAL_EMPTY_SET = SolverState(model=set(), step=0)

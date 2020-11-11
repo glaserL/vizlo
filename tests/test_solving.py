@@ -40,6 +40,23 @@ def test_new_solver():
     g = anotherOne.make_graph()
     assert len(g) == 6
 
+def test_simple_fact():
+    prg = ["a."]
+    slv = solver.AnotherOne(prg)
+    g = slv.make_graph()
+    print(g)
+
+def test_variable():
+    prg = ["x(a)."]
+    slv = solver.AnotherOne(prg)
+    g = slv.make_graph()
+    print(g)
+
+def test_choice():
+    prg = ["{a}."]
+    slv = solver.AnotherOne(prg)
+    g = slv.make_graph()
+    print(g)
 
 def test_has_reached_stable_model_function():
     one = solver.SolverState(set(["A","B"]))

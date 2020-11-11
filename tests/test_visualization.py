@@ -4,8 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from PySide2.QtWidgets import QApplication
 
-from debuggo.display import graph
-from debuggo.solve.solver import SolverState
+from debuggo.solve.solver import SolverState, annotate_edges_in_nodes
 from debuggo.display.graph import HeadlessPysideDisplay, MainWindow, PySideDisplay
 from debuggo.display.detail import HeadlessPySideDetailDisplay
 def create_simple_diGraph():
@@ -64,22 +63,6 @@ def test_detail_picture():
 def test_bfs():
     g, empty = create_branching_diGraph()
     annotate_edges_in_nodes(g, empty)
-
-def annotate_edges_in_nodes(g, begin):
-    path_id = 0
-    prev_step = 0
-    for node in nx.bfs_tree(g, begin):
-        print(node)
-        if prev_step != node.step:
-            print(f"Resetting {path_id}.")
-            path_id = 0
-        print(f"Setting {path_id}")
-        node.path = path_id
-        prev_step = node.step
-        path_id += 1
-    for node, target in nx.dfs_edges(g, begin):
-        print(f"{node, node.step, node.path} -[{g[node][target]}]> {target, target.step, node.path}")
-    return g
 
 
 def test_branching_graph():
