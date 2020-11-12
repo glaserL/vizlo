@@ -10,9 +10,9 @@ from PySide2.QtCore import Slot, QRect, Qt, QPoint
 from PySide2.QtGui import QImage, QPainter
 from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QStyle, QApplication, QHBoxLayout, \
     QMainWindow, QAction, QSplitter, QVBoxLayout, QWidget, QListWidget
+from networkx.drawing.nx_pydot import graphviz_layout
 
 from debuggo.solve.solver import SolverState
-
 
 class Color(QWidget):
     """Just for prototyping purposes"""
@@ -443,3 +443,34 @@ class Node(QGraphicsItem):
     # def paint(self, painter, option, widget):
     #     painter.drawRoundedRect(-10, -10, 20, 20, 5, 5)
 
+class NetworkxDisplay():
+
+    def __init__(self, graph):
+        self._g = graph
+
+    def draw(self):
+        # nx.draw(self._g)
+
+
+        pos = nx.drawing.layout.spectral_layout(self._g)
+
+        nx.draw_networkx_nodes(self._g, pos,
+                               # node_color=node_color,
+                               alpha=0.6,
+                               # node_size=node_size,
+                               # cmap=plt.get_cmap(colormap))
+                               )
+        nx.draw_networkx_edges(self._g, pos, alpha=0.5)
+
+        edge_labels = {}
+        for node, nbrsdict in self._g.adjacency():
+            for neighbor, edge_attrs in nbrsdict.items():
+                edge_labels[(node, neighbor)] = edge_attrs["rule"]
+
+
+        nx.draw_networkx_edge_labels(self._g, pos, edge_labels=edge_labels)
+        plt.show()
+
+        # pos = graphviz_layout(self._g, prog="twopi")
+        # nx.draw(self._g, pos)
+        # plt.show()

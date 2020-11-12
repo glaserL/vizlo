@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from PySide2.QtWidgets import QApplication
 
 from debuggo.solve.solver import SolverState, annotate_edges_in_nodes
-from debuggo.display.graph import HeadlessPysideDisplay, MainWindow, PySideDisplay
+from debuggo.display.graph import HeadlessPysideDisplay, MainWindow, PySideDisplay, NetworkxDisplay
 from debuggo.display.detail import HeadlessPySideDetailDisplay
 def create_simple_diGraph():
 
@@ -72,3 +72,8 @@ def test_branching_graph():
     pic = display.get_graph_as_np_array()
     plt.imshow(pic)
     plt.show()
+
+def test_nx_viz():
+    g, empty = create_branching_diGraph()
+    display = NetworkxDisplay(g)
+    display.draw()
