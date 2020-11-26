@@ -58,10 +58,11 @@ class AnotherOne():
         all_possible = set()
         for s in sss:
             all_possible.update(s.model)
-        print(all_possible)
+        print(f"All atoms that have been added in this time step: {all_possible}")
         for s in sss:
             falses = all_possible - set(s.model)
             s.falses = falses
+
 
     def make_graph(self):
 
@@ -70,7 +71,7 @@ class AnotherOne():
         self._g.add_node(INITIAL_EMPTY_SET)
         current_prg = []
         for i, rule in enumerate(self.prg):
-            print(f"Adding rule {rule}")
+            print(f"========{i}========Adding rule {rule}")
             current_prg.append(rule)
             ctl = clingo.Control("0")
             ctl.add("base", [], "\n".join(current_prg))
@@ -79,14 +80,13 @@ class AnotherOne():
             assumptions = self.find_nodes_at_timestep(i)
             print(f"{rule} with {len(assumptions)} assumpts.")
             for assmpts in assumptions:
-                print(f"Continuing with {assmpts}")
+                #print(f"Continuing with {assmpts}")
                 assumpts = self.create_true_symbols_from_solver_state(assmpts)
                 print(f"Assumptions: {assumpts}")
                 with ctl.solve(assumptions=assumpts, yield_=True) as handle:
                     solver_states_to_create = []
                     hacky_counter = 0
                     for m in handle:
-                        print("!")
                         syms = SolverState(m.symbols(atoms=True), i+1)
                         print(f"({assmpts})-[{rule}]->({(i + 1, syms)})")
                         solver_states_to_create.append(syms)
@@ -95,9 +95,19 @@ class AnotherOne():
                         # HACK: This means the candidate model became conflicting.
                         solver_states_to_create.append(SolverState(set()))
                     self.update_falses_in_solver_states(solver_states_to_create)
+                    self.assert_falses_from_assumptions(solver_states_to_create, assumpts)
                     for ss in solver_states_to_create:
                         self._g.add_edge(assmpts, ss, rule=rule)
         return self._g
+
+    def assert_falses_from_assumptions(self, syms : SolverState, assumpts):
+        for sym in syms:
+            for atom, value in assumpts:
+                print(f"Updating {sym} with {atom}={value}")
+                if not value:
+                    sym.falses.add(atom)
+
+
 
 class StupidRunner():
     def __init__(self, rules : [str]):
