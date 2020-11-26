@@ -1,5 +1,7 @@
 import math
 import os
+
+import igraph
 import networkx as nx
 import pathlib
 import matplotlib.pyplot as plt
@@ -446,31 +448,67 @@ class Node(QGraphicsItem):
 class NetworkxDisplay():
 
     def __init__(self, graph):
-        self._g = graph
+        self._ng : nx.DiGraph = graph
+        self._ig : igraph.Graph = self.nxgraph_to_igraph(graph)
 
     def draw(self):
         # nx.draw(self._g)
 
+        node_size = 500
 
-        pos = nx.drawing.layout.spectral_layout(self._g)
+        layout = self._ig.layout_reingold_tilford(root=[0])
+        layout.rotate(180)
+        # igraph.plot(self._ig, layout=layout)
+        nx_map = {i: node for i, node in enumerate(self._ng.nodes())}
+        pos = self.igraph_to_networkx_layout(layout, nx_map)
 
-        nx.draw_networkx_nodes(self._g, pos,
+        # pos = layouting_func(self._ng,
+        #                      scale=100,
+        #                      #subset_key="model"
+        #                      )
+
+        nx.draw_networkx_nodes(self._ng, pos,
                                # node_color=node_color,
-                               alpha=0.6,
-                               # node_size=node_size,
+                               alpha=0.9,
+                               node_size=node_size,
                                # cmap=plt.get_cmap(colormap))
                                )
-        nx.draw_networkx_edges(self._g, pos, alpha=0.5)
+        nx.draw_networkx_edges(self._ng, pos,
+                               alpha=0.5,
+                               node_size=node_size)
 
+        node_labels = {}
         edge_labels = {}
-        for node, nbrsdict in self._g.adjacency():
+        for node, nbrsdict in self._ng.adjacency():
+            node_labels[node] = node.model
             for neighbor, edge_attrs in nbrsdict.items():
                 edge_labels[(node, neighbor)] = edge_attrs["rule"]
 
-
-        nx.draw_networkx_edge_labels(self._g, pos, edge_labels=edge_labels)
+        nx.draw_networkx_labels(self._ng, pos,
+                                labels=node_labels)
+        nx.draw_networkx_edge_labels(self._ng, pos,
+                                     label_pos=.5,
+                                     rotate=False,
+                                     font_family="monospace",
+                                     bbox={'facecolor' : 'White',
+                                           'edgecolor' : 'Black',
+                                           'boxstyle':'round'},
+                                     edge_labels=edge_labels)
         plt.show()
 
+    def _inject_for_drawing(self, g):
+        for v, dat in g.nodes(data=True):
+            dat["model"] = v.model
         # pos = graphviz_layout(self._g, prog="twopi")
         # nx.draw(self._g, pos)
         # plt.show()
+    @staticmethod
+    def igraph_to_networkx_layout(i_layout, nx_map):
+        nx_layout = {}
+        for i, pos in enumerate(i_layout.coords):
+            nx_layout[nx_map[i]] = pos
+        return nx_layout
+
+    @staticmethod
+    def nxgraph_to_igraph(nxgraph):
+        return igraph.Graph.Adjacency((nx.to_numpy_matrix(nxgraph) > 0).tolist())
