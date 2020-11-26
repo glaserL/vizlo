@@ -1,7 +1,7 @@
 from debuggo.solve import solver
 from debuggo.display import graph
 from debuggo.main import Dingo, Debuggo
-
+import matplotlib.pyplot as plt
 
 ## Transformer
 def test_networkx():
@@ -31,3 +31,35 @@ def test_paint_first_model():
 def test_app():
     from debuggo.main import _main
     _main()
+
+def test_print_all_models():
+    ctl = Debuggo()
+    prg = "a. b. c. :- b. :- a."
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    ctl.paint()
+    plt.show()
+
+
+def test_print_only_specific_models():
+    ctl = Debuggo()
+    prg = "{a}. b :- a."
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    for model in ctl.solve(yield_=True):
+        if model.hasSomeThingSpecial():
+            ctl.addToPainter(model)
+
+        ctl.paintModels()
+    img = ctl.paint()
+    ctl._show(img)
+
+
+def test_adding_model_to_painter():
+    ctl = Debuggo()
+    prg = "{a}. b :- a."
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    for model in ctl.solve(yield_=True):
+        ctl.add_to_painter(model)
+    assert len(ctl.painter) > 0

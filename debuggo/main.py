@@ -3,7 +3,7 @@ import sys
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
 from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
-from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow
+from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow, NetworkxDisplay
 from debuggo.solve.solver import SolveRunner, AnotherOne, annotate_edges_in_nodes, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union
 import matplotlib.pyplot as plt
@@ -11,6 +11,12 @@ import matplotlib.pyplot as plt
 
 
 class Debuggo(Control):
+    def add_to_painter(self, model):
+        if not hasattr(self, "painter"):
+            self.painter = set()
+        self.painter.add(model)
+
+
     def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20):
         self.control = Control(arguments, logger, message_limit)
         self.transformer = JustTheRulesTransformer()
@@ -35,20 +41,12 @@ class Debuggo(Control):
     def paint(self):
         if self.anotherOne:
             g = self.anotherOne.make_graph()
-            annotate_edges_in_nodes(g, INITIAL_EMPTY_SET)
-            print(f"Painting graph with {len(g)} nodes.")
-            display = HeadlessPysideDisplay(g)
-            pic = display.get_graph_as_np_array()
-            return pic
+            display = NetworkxDisplay(g)
+            img = display.draw()
+            return img
         else:
             print("NO SOLVE RUNNER")
 
-    def _show(self, pic):
-        if len(pic):
-            plt.imshow(pic)
-            plt.show()
-        else:
-            print("PIC IS NONE")
 
 
 class Dingo(Control):
