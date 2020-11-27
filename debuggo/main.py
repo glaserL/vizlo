@@ -7,14 +7,14 @@ from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWind
 from debuggo.solve.solver import SolveRunner, AnotherOne, annotate_edges_in_nodes, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union
 import matplotlib.pyplot as plt
-
+import networkx as nx
 
 
 class Debuggo(Control):
     def add_to_painter(self, model):
         if not hasattr(self, "painter"):
-            self.painter = set()
-        self.painter.add(model)
+            self.painter = list()
+        self.painter.append(set(model))
 
 
     def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20):
@@ -38,14 +38,42 @@ class Debuggo(Control):
         self.anotherOne = AnotherOne(rules)
         print(f"Created {len(rules)} rules:\n{rules}")
 
+    def find_nodes_corresponding_to_stable_models(self, g, stable_models):
+        correspoding_nodes = set()
+        for model in stable_models:
+            for node in g.nodes():
+                print(f"{node} {type(node.model)} == {model} {type(model)} -> {set(node.model) == model}")
+                if set(node.model) == model and len(g.edges(node)) == 0: # This is a leaf
+                    print(f"{node} <-> {model}")
+                    correspoding_nodes.add(node)
+                    break
+        return correspoding_nodes
+
+    def prune_graph_leading_to_models(self, graph, models_as_nodes):
+        before = len(graph)
+        relevant_nodes = set()
+        for model in models_as_nodes:
+            for relevant_node in nx.all_simple_paths(graph, INITIAL_EMPTY_SET, model):
+                print(f"???{relevant_node}")
+                relevant_nodes.update(relevant_node)
+        all_nodes = set(graph.nodes())
+        irrelevant_nodes = all_nodes - relevant_nodes
+        graph.remove_nodes_from(irrelevant_nodes)
+        after = len(graph)
+        print(f"Removed {before-after} of {before} nodes ({(before-after)/before})")
+
+
     def paint(self):
-        if self.anotherOne:
-            g = self.anotherOne.make_graph()
-            display = NetworkxDisplay(g)
-            img = display.draw()
-            return img
-        else:
-            print("NO SOLVE RUNNER")
+        g = self.anotherOne.make_graph()
+        if hasattr(self, "painter"):
+            # User decided to print specific models.
+            interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
+            self.prune_graph_leading_to_models(g, interesting_nodes)
+        # we simply print all
+        display = NetworkxDisplay(g)
+        img = display.draw()
+        return img
+
 
 
 
