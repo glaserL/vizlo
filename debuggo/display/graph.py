@@ -453,7 +453,8 @@ class NetworkxDisplay():
 
     def draw(self):
         # nx.draw(self._g)
-
+        print(self._ng)
+        print(self._ig)
         node_size = 500
 
         layout = self._ig.layout_reingold_tilford(root=[0])
@@ -489,12 +490,12 @@ class NetworkxDisplay():
         nx.draw_networkx_edge_labels(self._ng, pos,
                                      label_pos=.5,
                                      rotate=False,
+                                     font_size=8,
                                      font_family="monospace",
                                      bbox={'facecolor' : 'White',
                                            'edgecolor' : 'Black',
                                            'boxstyle':'round'},
                                      edge_labels=edge_labels)
-        plt.show()
 
     def _inject_for_drawing(self, g):
         for v, dat in g.nodes(data=True):
