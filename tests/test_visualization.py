@@ -49,6 +49,20 @@ def create_diGraph_with_multiple_branchoffs():
     g.nodes(data=True)
     return g, empty
 
+def create_diGraph_not_a_tree():
+    g = nx.DiGraph()
+    empty = SolverState("{}", 0)
+    a = SolverState("{a}",1)
+    b = SolverState("{a,b}", 2)
+    c = SolverState("{a}", 2)
+    d = SolverState("{a,b}",3)
+    g.add_edge(empty, a, rule = "a.")
+    g.add_edge(a, b, rule="{b} :- a.")
+    g.add_edge(a, c, rule="{b} :- a.")
+    g.add_edge(b,d, rule="a :- b.")
+    g.add_edge(c,d, rule="a :- b.")
+    g.nodes(data=True)
+    return g, empty
 
 def test_print_picture():
     graph = create_simple_diGraph()
@@ -108,29 +122,12 @@ def test_nx_viz_multiple_branches():
     #     except TypeError as e:
     #         print(e)
 
+def test_nx_viz_converges_again():
+    g, _ = create_diGraph_not_a_tree()
+    display = NetworkxDisplay(g)
+    display.draw()
+
 def test_default_nx_viz():
     g, _ = create_diGraph_with_multiple_branchoffs()
     nx.draw_random(g, with_labels=True)
     plt.show()
-
-def test_foo():
-    g = igraph.Graph()
-    g.add_edge("a", "b")
-    g.add_edge("b", "c")
-    g.add_edge("b", "d")
-    g.add_edge("d","e")
-    g.add_edge("d","f")
-    g.layout_reingold_tilford()
-    # "bipartite_layout",
-    # "circular_layout",
-    # "kamada_kawai_layout",
-    # "random_layout",
-    # "rescale_layout",
-    # "rescale_layout_dict",
-    # "shell_layout",
-    # "spring_layout",
-    # "spectral_layout",
-    # "planar_layout",
-    # "fruchterman_reingold_layout",
-    # "spiral_layout",
-    # "multipartite_layout",
