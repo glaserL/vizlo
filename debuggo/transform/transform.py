@@ -277,18 +277,43 @@ class HeadBodyTransformer(Transformer):
 
 class JustTheRulesTransformer(Transformer):
 
+    def __init__(self):
+        super(JustTheRulesTransformer, self).__init__()
+        self.within_recursive = False
+
+    def visit_Program(self, program):
+        if program.name == "recursive":
+            print("!!")
+            print(f"B:{self.within_recursive}")
+            self.within_recursive = not self.within_recursive
+            print(f"A:{self.within_recursive}")
+
     def transform(self, program):
         prg = clingo.Control()
-        rules = []
+        normal_rules = []
+        recursive_rules = []
         with prg.builder() as b:
             t = JustTheRulesTransformer()
             clingo.parse_program(
                 program,
-                lambda stm: self.funcy(rules, t, stm))
-        return rules
+                lambda stm: t.funcy(normal_rules, recursive_rules, t, stm))
 
-    def funcy(self, rules, t, stm):
+        if len(recursive_rules):
+            normal_rules.append("\n".join(recursive_rules))
+        return normal_rules
+
+    def funcy(self, normal_rules, recursive_rules, t, stm):
         rule = t.visit(stm)
-        if not str(rule).startswith("#"):
-            rules.append(rule)
-
+        print(rule)
+        print(f"within: {self.within_recursive}")
+        if rule:
+            rule = str(rule)
+            if self.within_recursive:
+                recursive_rules.append(rule)
+            else:
+                if recursive_rules:
+                    recursive_rules.append(rule)
+                    normal_rules.append("\n".join(recursive_rules))
+                    recursive_rules.clear()
+                else:
+                    normal_rules.append(rule)
