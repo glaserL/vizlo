@@ -4,6 +4,8 @@ import clingo
 import networkx as nx
 import logging
 
+from debuggo.types import Program
+
 
 class SolverState():
     """
@@ -32,14 +34,14 @@ class SolverState():
 
 class SolveRunner():
 
-    def __init__(self, program : [str]): # TODO: Change this to clingo.Rule
-        self.prg = [str(rule) for rule in program]
+    def __init__(self, program : Program):
+        self.prg : Program = program
         print(f"Created AnotherOne with {len(self.prg)} rules.")
         self._g : nx.Graph = nx.DiGraph()
 
 
-    def find_nodes_at_timestep(self, step : int):
-        nodes = []
+    def find_nodes_at_timestep(self, step : int) -> List[SolverState]:
+        nodes : List[SolverState] = []
         for node in self._g:
             if node.step == step:
                 nodes.append(node)
@@ -68,10 +70,16 @@ class SolveRunner():
     def _generate_with_recursive(self, base_program, initial_partial_model: SolverState, recursive_component):
         changed = True
         previous_partial_model = initial_partial_model
+
+        ctls = {}
+        for rule in recursive_component:
+            ctl = self._make_new_control_and_ground(base_program+rule)
+            ctls[rule] = ctl
+
         while changed:
             for rule in recursive_component:
                 # We call the recursive component with one of the recursive rules
-                ctl = self._make_new_control_and_ground(base_program+rule)
+                ctl = ctls[rule]
                 assumptions = self.create_true_symbols_from_solver_state(previous_partial_model)
 
 
@@ -80,7 +88,7 @@ class SolveRunner():
         # TODO: REFACTOR THIS FUCKING ABOMINATION
 
         self._g.add_node(INITIAL_EMPTY_SET)
-        current_prg = []
+        current_prg : List[str] = []
         for i, rule in enumerate(self.prg):
             print(f"========{i}========Adding rule {rule}")
             current_prg.append(rule)
