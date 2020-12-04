@@ -36,28 +36,28 @@ def test_until_stable():
     assert len(graph) == 5
 
 def test_new_solver():
-    anotherOne = solver.AnotherOne(["a.", "{b} :- a.", "c :- b."])
+    anotherOne = solver.SolveRunner(["a.", "{b} :- a.", "c :- b."])
     g = anotherOne.make_graph()
     assert len(g) == 6
 
 def test_simple_fact():
     prg = ["a."]
-    slv = solver.AnotherOne(prg)
+    slv = solver.SolveRunner(prg)
     g = slv.make_graph()
 
 def test_function():
     prg = ["x(a)."]
-    slv = solver.AnotherOne(prg)
+    slv = solver.SolveRunner(prg)
     g = slv.make_graph()
 
 def test_variable():
-    prg = ["x(a).","y(X) :- x(X)."]
-    slv = solver.AnotherOne(prg)
+    prg = ["x(a).", "y(X) :- x(X)."]
+    slv = solver.SolveRunner(prg)
     g = slv.make_graph()
 
 def test_choice():
     prg = ["{a}."]
-    slv = solver.AnotherOne(prg)
+    slv = solver.SolveRunner(prg)
     g = slv.make_graph()
 
 def test_has_reached_stable_model_function():

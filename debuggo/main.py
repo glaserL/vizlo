@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
 from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
 from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow, NetworkxDisplay
-from debuggo.solve.solver import SolveRunner, AnotherOne, annotate_edges_in_nodes, INITIAL_EMPTY_SET
+from debuggo.solve.solver import SolveRunner, SolveRunner, annotate_edges_in_nodes, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -35,7 +35,7 @@ class Debuggo(Control):
     def add(self, name: str, parameters: List[str], program: str) -> None:
         self.control.add(name, parameters, program)
         rules = self.transformer.transform(program)
-        self.anotherOne = AnotherOne(rules)
+        self.anotherOne = SolveRunner(rules)
         print(f"Created {len(rules)} rules:\n{rules}")
 
     def find_nodes_corresponding_to_stable_models(self, g, stable_models):
