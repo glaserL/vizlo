@@ -23,6 +23,18 @@ def test_new_solver():
     g = anotherOne.make_graph()
     assert len(g) == 6
 
+def test_long_distance_branching():
+    prg = ["a.","{b} :- a.", "c :- b.", "{d} :- b.", "e :- not d."]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    assert len(g) == 12
+    nodes = list(g.nodes)
+    lengths = [0,1,1,2,1,3,1,3,4,2,4,4]
+    for i, l in enumerate(lengths):
+        assert len(nodes[i].model) == l
+
+
+
 def test_simple_fact():
     prg = ["a."]
     slv = solver.SolveRunner(prg)
