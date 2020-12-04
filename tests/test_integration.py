@@ -38,11 +38,8 @@ def test_print_all_models():
     ctl = Debuggo()
     prg = "a. {b} :- a. c :- b. d :- c."
     prg = "a."
-<<<<<<< HEAD
     prg = "x(1).\n#program recursive.\nx(X) :- x(X-1), X<10.\n#program recursive."
     prg = "x(1).\n#program recursive.\ny(X) :- x(X).\nx(X) :- y(Y), Y==X-1, X<10.\n#program recursive."
-=======
->>>>>>> 215256bd37e8b213e46906f4e450ec4760e10bd6
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     ctl.paint()
@@ -88,7 +85,6 @@ def test_finding_corresponding_nodes():
             model_as_set = list(model.symbols(atoms=True))
             stable_models.append(model_as_set)
     g = ctl.anotherOne.make_graph()
-<<<<<<< HEAD
     assert 2 == len(stable_models) == len(ctl.find_nodes_corresponding_to_stable_models(g, stable_models))
 
 def test_recursion():
@@ -99,6 +95,4 @@ def test_recursion():
     ctl.ground([("base", [])])
     ctl.paint()
     plt.show()
-=======
-    assert 2 == len(stable_models) == len(ctl.find_nodes_corresponding_to_stable_models(g, stable_models))
->>>>>>> 215256bd37e8b213e46906f4e450ec4760e10bd6
+
