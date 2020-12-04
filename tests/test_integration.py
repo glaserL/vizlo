@@ -1,3 +1,5 @@
+import clingo
+
 from debuggo.solve import solver
 from debuggo.display import graph
 from debuggo.main import Dingo, Debuggo
@@ -34,25 +36,32 @@ def test_app():
 
 def test_print_all_models():
     ctl = Debuggo()
-    prg = "a. b. c. :- b. :- a."
+    prg = "a. {b} :- a. c :- b. d :- c."
+    prg = "a."
+    prg = "x(1).\n#program recursive.\nx(X) :- x(X-1), X<10.\n#program recursive."
+    prg = "x(1).\n#program recursive.\ny(X) :- x(X).\nx(X) :- y(Y), Y==X-1, X<10.\n#program recursive."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     ctl.paint()
     plt.show()
 
 
+
 def test_print_only_specific_models():
-    ctl = Debuggo()
+    ctl = Debuggo("0")
     prg = "{a}. b :- a."
+    prg = "a. {b} :- a. c :- b. d :- not c."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
-    for model in ctl.solve(yield_=True):
-        if model.hasSomeThingSpecial():
-            ctl.addToPainter(model)
-
-        ctl.paintModels()
+    with ctl.solve(yield_ = True) as handle:
+        for model in handle:
+            print(f"!!!{model}")
+            symbols = model.symbols(atoms=True)
+            if len(symbols) > 1:
+                print(f"Oh, what an interesting model! {model}")
+                ctl.add_to_painter(symbols)
     img = ctl.paint()
-    ctl._show(img)
+    plt.show()
 
 
 def test_adding_model_to_painter():
@@ -60,6 +69,29 @@ def test_adding_model_to_painter():
     prg = "{a}. b :- a."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
-    for model in ctl.solve(yield_=True):
-        ctl.add_to_painter(model)
+    with ctl.solve(yield_ = True) as handle:
+        for model in handle:
+            ctl.add_to_painter(model)
     assert len(ctl.painter) > 0
+
+def test_finding_corresponding_nodes():
+    ctl = Debuggo(["0"])
+    prg = "{a}. b :- a."
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    stable_models = []
+    with ctl.solve(yield_ = True) as handle:
+        for model in handle:
+            model_as_set = list(model.symbols(atoms=True))
+            stable_models.append(model_as_set)
+    g = ctl.anotherOne.make_graph()
+    assert 2 == len(stable_models) == len(ctl.find_nodes_corresponding_to_stable_models(g, stable_models))
+
+def test_recursion():
+    ctl = Debuggo(["0"])
+    prg = "a.\n#program recursive.\na :- b.\nb :- a.\n#program recursive."
+
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    ctl.paint()
+    plt.show()

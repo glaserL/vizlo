@@ -511,9 +511,11 @@ class NetworkxDisplay():
                                            'boxstyle':'round'},
                                      edge_labels=edge_labels)
 
-    def _inject_for_drawing(self, g):
+    @staticmethod
+    def _inject_for_drawing(g):
         for v, dat in g.nodes(data=True):
-            dat["model"] = v.model
+            dat["step"] = v.rule
+            print(dat)
         # pos = graphviz_layout(self._g, prog="twopi")
         # nx.draw(self._g, pos)
         # plt.show()

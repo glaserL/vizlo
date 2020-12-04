@@ -39,4 +39,15 @@ def test_ast_transformer():
         gold_result = "".join(f.readlines())
     assert are_two_lists_identical(program.split("\n"), gold_result.split("\n"))
 
-    
+
+def test_recursive_parsing_with_annotation():
+    prg = """
+    #program recursive.
+    a :- b.
+    b :- a, not b.
+    #program recursive.
+    """
+    transformer = transform.JustTheRulesTransformer()
+    parsed_program = transformer.transform(prg)
+    print(parsed_program)
+    assert len(parsed_program) == 1
