@@ -18,23 +18,6 @@ def create_ctl(program):
     ctl.ground([("base", [])])
     return ctl
 
-def test_solver_runner_stepping():
-    reified_program = get_transformed_test_program()
-    ctl = create_ctl(reified_program)
-    sr = solver.SolveRunner(get_test_program(),ctl)
-    for _ in range(5):
-        print(".",end="")
-        sr.step()
-    graph = sr.graph
-    assert len(graph) == 5
-
-def test_until_stable():
-    reified_program = get_transformed_test_program()
-    sr = solver.SolveRunner(get_test_program(), create_ctl(reified_program))
-    sr.step_until_stable()
-    graph = sr.graph
-    assert len(graph) == 5
-
 def test_new_solver():
     anotherOne = solver.SolveRunner(["a.", "{b} :- a.", "c :- b."])
     g = anotherOne.make_graph()
@@ -44,43 +27,48 @@ def test_simple_fact():
     prg = ["a."]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    assert len(g) == 2
+    nodes = list(g.nodes)
+    assert len(nodes[0].model) == 0
+    assert len(nodes[1].model) == 1
 
 def test_function():
     prg = ["x(a)."]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    assert len(g) == 2
+    nodes = list(g.nodes)
+    assert len(nodes[0].model) == 0
+    assert len(nodes[1].model) == 1
+
 
 def test_variable():
     prg = ["x(a).", "y(X) :- x(X)."]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    assert len(g) == 3
+    nodes = list(g.nodes)
+    assert len(nodes[0].model)==0
+    assert len(nodes[1].model) == 1
+    assert len(nodes[2].model) == 2
+
 
 def test_choice():
     prg = ["{a}."]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    assert len(g) == 3
+    nodes = list(g.nodes)
+    assert len(nodes[0].model) == 0
+    assert len(nodes[1].model) == 0
+    assert len(nodes[2].model) == 1
 
 def test_has_reached_stable_model_function():
     one = solver.SolverState(set(["A","B"]))
     two = solver.SolverState(set(["A","B"]))
     assert one == two
 
-def test_early_stopping_of_solver():
-    reified_program = get_transformed_test_program()
-    sr = solver.SolveRunner(get_test_program(), create_ctl(reified_program))
-    for _ in range(20):
-        sr.step()
-    graph = sr.graph
-    assert len(graph) == 5
 
 def test_solver_state_is_hashable():
     solver_state = solver.SolverState(None)
     assert hash(solver_state)
-
-def test_minimal_solving_program():
-    prg = "a."
-    prg_reified = "h(a,1,()) :- a.\na.\n#external a."
-    sr = solver.SolveRunner(prg, create_ctl(prg_reified))
-    for _ in range(5):
-        sr.step()
-    assert (len(sr.graph)) == 2
