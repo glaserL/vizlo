@@ -6,6 +6,8 @@ from clingo import ast
 from typing import List
 
 
+RuleSet = List[str]
+Program = List[RuleSet]
 class ASPTransformer():
     """
     Transforms a given ASP program into a reified version.
@@ -288,7 +290,7 @@ class JustTheRulesTransformer(Transformer):
             self.within_recursive = not self.within_recursive
             print(f"A:{self.within_recursive}")
 
-    def transform(self, program):
+    def transform(self, program) -> Program:
         prg = clingo.Control()
         normal_rules = []
         recursive_rules = []
@@ -299,10 +301,10 @@ class JustTheRulesTransformer(Transformer):
                 lambda stm: t.funcy(normal_rules, recursive_rules, t, stm))
 
         if len(recursive_rules):
-            normal_rules.append("\n".join(recursive_rules))
+            normal_rules.append(recursive_rules)
         return normal_rules
 
-    def funcy(self, normal_rules, recursive_rules, t, stm):
+    def funcy(self, normal_rules: Program, recursive_rules: RuleSet, t, stm):
         rule = t.visit(stm)
         print(rule)
         print(f"within: {self.within_recursive}")
@@ -313,7 +315,7 @@ class JustTheRulesTransformer(Transformer):
             else:
                 if recursive_rules:
                     recursive_rules.append(rule)
-                    normal_rules.append("\n".join(recursive_rules))
+                    normal_rules.append(recursive_rules)
                     recursive_rules.clear()
                 else:
-                    normal_rules.append(rule)
+                    normal_rules.append([rule])
