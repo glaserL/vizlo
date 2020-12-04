@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
     def exit_app(self, checked):
         sys.exit()
 class Visualizer(object):
-    
+
     def __init__(self, solver_paths):
         self.solver_paths = solver_paths
 
@@ -93,12 +93,12 @@ class FolderVisualizer(Visualizer):
         self.target_dir = target_dir
 
     def write_paths(self, paths):
-        print(f"Root directory for visualization: {self.target_dir}")  
+        print(f"Root directory for visualization: {self.target_dir}")
         COMMIT = False # Change this to true to actually write stuff.
         if COMMIT:
             if not os.path.exists(self.target_dir):
                 os.mkdir(self.target_dir)
-                    
+
         for path in paths:
             mkpath = f"{self.target_dir}/{'/'.join(path)}"
             print(f"Path: {mkpath}")
@@ -281,7 +281,7 @@ class PySideDisplay(QGraphicsView):
                 scene.addItem(edgeView)
         for nodeData, nodeView in drawnNodes.items():
             nodeView.setPos(nodeData.path*100, nodeData.step*100)
-            
+
         self.scale(0.8, 0.8)
         self.setMinimumSize(400, 400)
         self.scaleView(1)
