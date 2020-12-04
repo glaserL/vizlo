@@ -1,5 +1,4 @@
 from debuggo.solve import solver
-from debuggo.types import SolvingHistory
 from clingo import Control
 
 def get_transformed_test_program():
@@ -72,7 +71,7 @@ def test_function():
 
 
 def test_variable():
-    prg = ["x(a).", "y(X) :- x(X)."]
+    prg = [["x(a)."], ["y(X) :- x(X)."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 3
@@ -101,3 +100,9 @@ def test_has_reached_stable_model_function():
 def test_solver_state_is_hashable():
     solver_state = solver.SolverState(None)
     assert hash(solver_state)
+
+def test_recursion():
+    prg = [["{a}."], ["c :- b.", "b :- c; not a."]]
+    slv = solver.SolveRunner(prg)
+    slv._g.add_node(solver.INITIAL_EMPTY_SET)
+    slv._recursive2(prg[1], 0)

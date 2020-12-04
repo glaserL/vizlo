@@ -9,8 +9,6 @@ from debuggo.display.graph import HeadlessPysideDisplay, MainWindow, PySideDispl
 from debuggo.display.detail import HeadlessPySideDetailDisplay
 import igraph
 
-from testitest import _inject_for_drawing
-
 
 def create_simple_diGraph():
 

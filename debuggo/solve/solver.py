@@ -1,12 +1,14 @@
-from typing import List
+import sys
+from typing import List, Dict
 
 import clingo
 import networkx as nx
 import logging
 
-from debuggo.types import Program
 
-
+EMERGENCY_EXIT_COUNTER = 0
+RuleSet = List[str]
+Program = List[RuleSet]
 class SolverState():
     """
     Represents a single solver state that is created during execution.
@@ -35,10 +37,22 @@ class SolverState():
 class SolveRunner():
 
     def __init__(self, program : Program):
+        self.EMERGENCY_EXIT_COUNTER = 0
+        self.ctls = self.generate_ctl_objects_for_rules(program)
         self.prg : Program = program
         print(f"Created AnotherOne with {len(self.prg)} rules.")
         self._g : nx.Graph = nx.DiGraph()
 
+    def generate_ctl_objects_for_rules(self, program: Program) -> Dict[str, clingo.Control]:
+        ctls = {}
+        partial_program = []
+        for rule_set in program:
+            for rule in rule_set:
+                print(f"Adding {rule}")
+                partial_program.append(rule)
+                ctls[rule] = self._make_new_control_and_ground(partial_program)
+        print(f"Created {len(ctls)} Control objects for {len(program)} rule sets.")
+        return ctls
 
     def find_nodes_at_timestep(self, step : int) -> List[SolverState]:
         nodes : List[SolverState] = []
@@ -67,6 +81,58 @@ class SolveRunner():
             s.falses = falses
 
 
+    def do_one_rule(self, rule, partial_model, i) -> bool:
+        assumptions = self.create_true_symbols_from_solver_state(partial_model)
+        ctl = self._get_ctl_for_rule(rule)
+        new_partial_models = self._get_new_partial_models(assumptions, ctl, i)
+        if len(new_partial_models) and any((new_partial_model != partial_model for new_partial_model in new_partial_models)):
+            self._consolidate_new_solver_states(assumptions, new_partial_models)
+            self._update_graph(partial_model, rule, new_partial_models)
+            return True
+        else:
+            return False
+
+
+    def _recursive2(self, rule_set, i):
+        if self.EMERGENCY_EXIT_COUNTER > 30:
+            sys.exit(1)
+        else:
+            self.EMERGENCY_EXIT_COUNTER += 1
+
+        partial_models = self.find_nodes_at_timestep(i)
+        print(f"Partial models: {partial_models}")
+        for partial_model in partial_models:
+            results: List[bool] = []
+            for rule in rule_set:
+                results.append(self.do_one_rule(rule, partial_model, i))
+            print(f"results: {results}")
+            if any(results):
+                self._recursive2(rule_set, i+1)
+
+    def make_graph2(self):
+        self._g.add_node(INITIAL_EMPTY_SET)
+        for i, rule_set in enumerate(self.prg):
+            self._recursive2(rule_set, i)
+        return self._g
+
+    def _recursive(self, partial_model, rule, all_rules, i):
+        if (i>20):
+            return
+        assumptions = self.create_true_symbols_from_solver_state(partial_model)
+        ctl = self._get_ctl_for_rule(rule)
+        new_partial_models = self._get_new_partial_models(assumptions, ctl, i)
+        if assumptions == new_partial_models: # this didnt add anything
+            return False
+        else:
+            self._consolidate_new_solver_states(assumptions, new_partial_models)
+            self._update_graph(partial_model, rule, new_partial_models)
+            did_below_return_anything = []
+            for new_partial_model in new_partial_models:
+                for other_rule in all_rules:
+                    if other_rule != rule:
+                        did_below_return_anything.append(self._recursive(new_partial_model, other_rule, all_rules, i+1))
+            return True
+
     def _generate_with_recursive(self, base_program, initial_partial_model: SolverState, recursive_component):
         changed = True
         previous_partial_model = initial_partial_model
@@ -81,6 +147,7 @@ class SolveRunner():
                 # We call the recursive component with one of the recursive rules
                 ctl = ctls[rule]
                 assumptions = self.create_true_symbols_from_solver_state(previous_partial_model)
+                new_partial_models = self._get_new_partial_models(assumptions, ctl, )
 
 
     def make_graph(self):
@@ -139,6 +206,9 @@ class SolveRunner():
                 print(f"Updating {sym} with {atom}={value}")
                 if not value:
                     sym.falses.add(atom)
+
+    def _get_ctl_for_rule(self, rule: str) -> clingo.Control:
+        return self.ctls[rule]
 
 
 def annotate_edges_in_nodes(g, begin):

@@ -64,7 +64,7 @@ class Debuggo(Control):
 
 
     def paint(self):
-        g = self.anotherOne.make_graph()
+        g = self.anotherOne.make_graph2()
         if hasattr(self, "painter"):
             # User decided to print specific models.
             interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)

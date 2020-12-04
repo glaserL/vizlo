@@ -452,11 +452,10 @@ class NetworkxDisplay():
         self._ig : igraph.Graph = self.nxgraph_to_igraph(graph)
 
     def draw(self):
-        # nx.draw(self._g)
-        print(self._ng)
+        # nx.draw(self._ng)
+        print(f"Drawing graph with {len(self._ng)} nodes.")
         print(self._ig)
         node_size = 500
-
         layout = self._ig.layout_reingold_tilford(root=[0])
         layout.rotate(180)
         # igraph.plot(self._ig, layout=layout)
