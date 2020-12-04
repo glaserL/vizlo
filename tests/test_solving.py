@@ -33,6 +33,23 @@ def test_long_distance_branching():
     for i, l in enumerate(lengths):
         assert len(nodes[i].model) == l
 
+def test_simple_recursive():
+    prg = [["a."], ["c :- b.", "b :- c, not a."]]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    assert len(g) == 3
+
+def test_recursive_with_choice_before():
+    prg = [["{a}."], ["c :- b.", "b :- c, not a."]]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    assert len(g) == 5
+
+def test_recursive_with_choice_within():
+    prg = [["c :- b.", "{b} :- c, not a."]]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    assert len(g) == 6
 
 
 def test_simple_fact():

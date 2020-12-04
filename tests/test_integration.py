@@ -40,6 +40,7 @@ def test_print_all_models():
     prg = "a."
     prg = "x(1).\n#program recursive.\nx(X) :- x(X-1), X<10.\n#program recursive."
     prg = "x(1).\n#program recursive.\ny(X) :- x(X).\nx(X) :- y(Y), Y==X-1, X<10.\n#program recursive."
+    prg = "a.\n{b} :- a.\nc :- b.\n{d} :- b.\ne :- not d."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     ctl.paint()
@@ -51,6 +52,7 @@ def test_print_only_specific_models():
     ctl = Debuggo("0")
     prg = "{a}. b :- a."
     prg = "a. {b} :- a. c :- b. d :- not c."
+
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     with ctl.solve(yield_ = True) as handle:
