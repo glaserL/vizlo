@@ -80,7 +80,6 @@ class Visitor:
             self.visit(y, *args, **kwargs)
 
     def visit_tuple(self, x, *args, **kwargs):
-        print(f"Visting tuple {x}")
         for y in x:
             self.visit(y, *args, **kwargs)
 
@@ -90,7 +89,7 @@ class Visitor:
     def visit(self, x, *args, **kwargs):
         if isinstance(x, ast.AST):
             attr = "visit_" + str(x.type)
-            print(f"{x} ({attr} (({hasattr(self, attr)})) {{{kwargs}}})")
+            #print(f"{x} ({attr} (({hasattr(self, attr)})) {{{kwargs}}})")
             if hasattr(self, attr):
                 return getattr(self, attr)(x, *args, **kwargs)
             return self.visit_children(x, *args, **kwargs)
@@ -117,7 +116,6 @@ class Transformer(Visitor):
         return x
 
     def _seq(self, i, z, x, args, kwargs):
-        print("Visting Transformer swq")
         for y in x[:i]:
             yield y
         yield z
@@ -125,7 +123,6 @@ class Transformer(Visitor):
             yield self.visit(y, *args, **kwargs)
 
     def visit_list(self, x, *args, **kwargs):
-        print(f"Visting Transformer lst {x}")
         for i, y in enumerate(x):
             z = self.visit(y, *args, **kwargs)
             if y is not z:
@@ -133,7 +130,6 @@ class Transformer(Visitor):
         return x
 
     def visit_tuple(self, x, *args, **kwargs):
-        print("Visting Transformer tup")
         for i, y in enumerate(x):
             z = self.visit(y, *args, **kwargs)
             if y is not z:
@@ -285,10 +281,10 @@ class JustTheRulesTransformer(Transformer):
 
     def visit_Program(self, program):
         if program.name == "recursive":
-            print("!!")
-            print(f"B:{self.within_recursive}")
+            #print("!!")
+            #print(f"B:{self.within_recursive}")
             self.within_recursive = not self.within_recursive
-            print(f"A:{self.within_recursive}")
+            #print(f"A:{self.within_recursive}")
 
     def transform(self, program) -> Program:
         prg = clingo.Control()
@@ -306,8 +302,8 @@ class JustTheRulesTransformer(Transformer):
 
     def funcy(self, normal_rules: Program, recursive_rules: RuleSet, t, stm):
         rule = t.visit(stm)
-        print(rule)
-        print(f"within: {self.within_recursive}")
+        #print(rule)
+        #print(f"within: {self.within_recursive}")
         if rule:
             rule = str(rule)
             if self.within_recursive:
