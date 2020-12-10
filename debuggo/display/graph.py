@@ -451,16 +451,32 @@ class NetworkxDisplay():
         self._ng : nx.DiGraph = graph
         self._ig : igraph.Graph = self.nxgraph_to_igraph(graph)
 
+    def model_to_string(self, model):
+        result_str = ""
+        how_many_per_line = math.sqrt(len(model))
+        tmp = []
+        for m in model:
+            print(f"Consuming {str(m)}, current_state = {tmp}")
+            if len(tmp) >= how_many_per_line:
+                result_str += ", ".join(tmp)+"\n"
+                tmp.clear()
+            tmp.append(str(m))
+        result_str += ", ".join(tmp)
+        return f"{{{result_str}}}"
+
     def draw(self):
         # nx.draw(self._ng)
         print(f"Drawing graph with {len(self._ng)} nodes.")
         print(self._ig)
-        node_size = 500
+        node_size = 1000
         layout = self._ig.layout_reingold_tilford(root=[0])
         layout.rotate(180)
         # igraph.plot(self._ig, layout=layout)
         nx_map = {i: node for i, node in enumerate(self._ng.nodes())}
         pos = self.igraph_to_networkx_layout(layout, nx_map)
+
+        for node in self._ng:
+            print(f"{node.model} ({type(node)})")
 
         # pos = layouting_func(self._ng,
         #                      scale=100,
@@ -480,21 +496,25 @@ class NetworkxDisplay():
         node_labels = {}
         edge_labels = {}
         recursive_labels = {}
+        rec_edge_c = 0
         for node, nbrsdict in self._ng.adjacency():
-            node_labels[node] = node.model
+            node_labels[node] = self.model_to_string(node.model)
             for neighbor, edge_attrs in nbrsdict.items():
-                if edge_attrs["rule"].count(":-") > 1:
-                    recursive_labels[(node, neighbor)] = edge_attrs["rule"]
+                if str(edge_attrs["rule"]).count(":-") > 1:
+                    rec_label = self.make_rec_label(edge_attrs['rule'])
+                    recursive_labels[(node, neighbor)] = f"[{rec_edge_c}] {rec_label}"
+                    rec_edge_c += 1
                 else:
                     edge_labels[(node, neighbor)] = edge_attrs["rule"]
 
         nx.draw_networkx_labels(self._ng, pos,
+                                font_size=8,
                                 labels=node_labels)
 
         nx.draw_networkx_edge_labels(self._ng, pos,
                                      label_pos=.5,
                                      rotate=False,
-                                     font_size=8,
+                                     font_size=7,
                                      font_family="monospace",
                                      bbox={'facecolor' : 'White',
                                            'edgecolor' : 'Red',
@@ -503,7 +523,7 @@ class NetworkxDisplay():
         nx.draw_networkx_edge_labels(self._ng, pos,
                                      label_pos=.5,
                                      rotate=False,
-                                     font_size=8,
+                                     font_size=7,
                                      font_family="monospace",
                                      bbox={'facecolor' : 'White',
                                            'edgecolor' : 'Black',
@@ -528,3 +548,7 @@ class NetworkxDisplay():
     @staticmethod
     def nxgraph_to_igraph(nxgraph):
         return igraph.Graph.Adjacency((nx.to_numpy_matrix(nxgraph) > 0).tolist())
+
+    def make_rec_label(self, param):
+        return "\n".join(param)
+

@@ -30,38 +30,59 @@ def test_paint_first_model():
     ctl.solve()
     ctl.paint("")
 
-def test_app():
-    from debuggo.main import _main
-    _main()
+#def test_app():
+#    from debuggo.main import _main
+#    _main()
 
 def test_print_all_models():
     ctl = Debuggo()
-    prg = "a. {b} :- a. c :- b. d :- c."
+    # prg = "a. {b} :- a. c :- b. d :- c."
     prg = "a."
-    prg = "x(1).\n#program recursive.\nx(X) :- x(X-1), X<10.\n#program recursive."
-    prg = "x(1).\n#program recursive.\ny(X) :- x(X).\nx(X) :- y(Y), Y==X-1, X<10.\n#program recursive."
-    prg = "a.\n{b} :- a.\nc :- b.\n{d} :- b.\ne :- not d."
+    # prg = "x(1).\n#program recursive.\nx(X) :- x(X-1), X<10.\n#program recursive."
+    prg = "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
+    prg = "a.\n{b} :- a.\nc :- b.\n{d} :- b.\ne :- not d.\n:- b."
+    prg = "{a}.\nb :- a. :- b."
+    #prg = "x(1). x(X) :- x(Y); Y<X; X < 10."
+    #prg = "{x(1)}.\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
-    ctl.paint()
     plt.show()
+    # TODO: remove curly braces and commas
+    # TODO: rule only once
+    # TODO: completely hide contstrained models
+    # TODO: Draw choice rules different (arrow dotted)
+    # TODO: Draw constraint rules differently (red)
+    # TODO: only print what was added (as option) the sudoku program, tsp, from asp class
 
+# Milestones:
+# Expand recursion steps
+# Clickable
+# Independent of order
+# Efficiency
 
+# Try with a real world program
 
 def test_print_only_specific_models():
-    ctl = Debuggo("0")
+    ctl = Debuggo(["0"])
     prg = "{a}. b :- a."
     prg = "a. {b} :- a. c :- b. d :- not c."
+    prg = "{a}.\n{b} :- a."
+    prg = "{a}.\n{b}.\n#program recursive.\n a :- b.\n b:- a.\n#program recursive.\n c :- b." # TODO: FIX
+    prg = "a(1..2). {y(X)\n    \t } :- a(X). "
 
+# TODO: test with this {a}. {b}. {c}. a :- b. b: - c. c:- a.
+    # TODO: paint only on
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     with ctl.solve(yield_ = True) as handle:
         for model in handle:
             print(f"!!!{model}")
             symbols = model.symbols(atoms=True)
-            if len(symbols) > 1:
-                print(f"Oh, what an interesting model! {model}")
-                ctl.add_to_painter(symbols)
+            #if len(symbols) != 1:
+            print(f"Oh, what an interesting model! {model}")
+            ctl.add_to_painter(symbols)
+    ctl.paint()
+
     img = ctl.paint()
     plt.show()
 
@@ -92,9 +113,14 @@ def test_finding_corresponding_nodes():
 def test_recursion():
     ctl = Debuggo(["0"])
     prg = "a.\n#program recursive.\na :- b.\nb :- a.\n#program recursive."
+    prg = "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
 
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     ctl.paint()
     plt.show()
 
+def test_no_segfault():
+    ctl = Debuggo(["0"])
+
+    ctl.add("base", [], "b.")

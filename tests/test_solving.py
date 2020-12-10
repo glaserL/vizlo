@@ -18,12 +18,12 @@ def create_ctl(program):
     return ctl
 
 def test_new_solver():
-    anotherOne = solver.SolveRunner(["a.", "{b} :- a.", "c :- b."])
+    anotherOne = solver.SolveRunner([["a."], ["{b} :- a."], ["c :- b."]])
     g = anotherOne.make_graph()
     assert len(g) == 6
 
 def test_long_distance_branching():
-    prg = ["a.","{b} :- a.", "c :- b.", "{d} :- b.", "e :- not d."]
+    prg = [["a."],["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 12
@@ -52,7 +52,7 @@ def test_recursive_with_choice_within():
 
 
 def test_simple_fact():
-    prg = ["a."]
+    prg = [["a."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 2
@@ -61,7 +61,7 @@ def test_simple_fact():
     assert len(nodes[1].model) == 1
 
 def test_function():
-    prg = ["x(a)."]
+    prg = [["x(a)."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 2
@@ -76,13 +76,13 @@ def test_variable():
     g = slv.make_graph()
     assert len(g) == 3
     nodes = list(g.nodes)
-    assert len(nodes[0].model)==0
+    assert len(nodes[0].model) == 0
     assert len(nodes[1].model) == 1
     assert len(nodes[2].model) == 2
 
 
 def test_choice():
-    prg = ["{a}."]
+    prg = [["{a}."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 3
@@ -92,8 +92,8 @@ def test_choice():
     assert len(nodes[2].model) == 1
 
 def test_has_reached_stable_model_function():
-    one = solver.SolverState(set(["A","B"]))
-    two = solver.SolverState(set(["A","B"]))
+    one = solver.SolverState(set(["A", "B"]))
+    two = solver.SolverState(set(["A", "B"]))
     assert one == two
 
 
@@ -102,7 +102,8 @@ def test_solver_state_is_hashable():
     assert hash(solver_state)
 
 def test_recursion():
-    prg = [["{a}."], ["c :- b.", "b :- c; not a."]]
+    "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
+    prg = [["x(1)."], ["x(X) :- y(X).", "y(X) :- x(X-1); X<4."]]
     slv = solver.SolveRunner(prg)
-    slv._g.add_node(solver.INITIAL_EMPTY_SET)
-    slv._recursive2(prg[1], 0)
+    g = slv.make_graph2()
+    print(len(g))

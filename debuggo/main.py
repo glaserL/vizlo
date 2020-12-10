@@ -35,6 +35,7 @@ class Debuggo(Control):
     def add(self, name: str, parameters: List[str], program: str) -> None:
         self.control.add(name, parameters, program)
         rules = self.transformer.transform(program)
+        print(f"Recieved {len(rules)} rules from transformer:\n{rules}")
         self.anotherOne = SolveRunner(rules)
         print(f"Created {len(rules)} rules:\n{rules}")
 
@@ -64,7 +65,7 @@ class Debuggo(Control):
 
 
     def paint(self):
-        g = self.anotherOne.make_graph2()
+        g = self.anotherOne.make_graph()
         if hasattr(self, "painter"):
             # User decided to print specific models.
             interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
