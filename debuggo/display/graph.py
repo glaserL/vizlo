@@ -1,5 +1,6 @@
 import math
 import os
+from typing import Tuple
 
 import igraph
 import networkx as nx
@@ -445,6 +446,8 @@ class Node(QGraphicsItem):
     # def paint(self, painter, option, widget):
     #     painter.drawRoundedRect(-10, -10, 20, 20, 5, 5)
 
+EDGE_ALPHA = 0.8
+
 class NetworkxDisplay():
 
     def __init__(self, graph):
@@ -463,6 +466,16 @@ class NetworkxDisplay():
             tmp.append(str(m))
         result_str += ", ".join(tmp)
         return f"{{{result_str}}}"
+
+    def split_into_edge_lists(self, g : nx.Graph) -> Tuple:
+        constraints = []
+        normal = []
+        for edge in self._ng.edges(data=True):
+            if "#false" in edge[2]["rule"]:
+                constraints.append(edge)
+            else:
+                normal.append(edge)
+        return normal, constraints
 
     def draw(self):
         # nx.draw(self._ng)
@@ -489,9 +502,21 @@ class NetworkxDisplay():
                                node_size=node_size,
                                # cmap=plt.get_cmap(colormap))
                                )
+
+        normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
+
         nx.draw_networkx_edges(self._ng, pos,
-                               alpha=0.5,
+                               edgelist=normal_edge_list,
+                               alpha=EDGE_ALPHA,
                                node_size=node_size)
+
+        nx.draw_networkx_edges(self._ng, pos,
+                               edgelist=constraint_edge_list,
+                               alpha=EDGE_ALPHA,
+                               style="dashed",
+                               node_size=node_size)
+
+
 
         node_labels = {}
         edge_labels = {}
