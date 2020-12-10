@@ -39,12 +39,13 @@ class SolverState():
 
 class SolveRunner():
 
-    def __init__(self, program: Program):
+    def __init__(self, program: Program, global_assumptions = None):
         self.EMERGENCY_EXIT_COUNTER = 0
         self.ctls = self.generate_ctl_objects_for_rules(program)
         self.prg: Program = program
         print(f"Created AnotherOne with {len(self.prg)} rules.")
         print(f"{self.ctls}")
+        self._global_assumptions = global_assumptions if global_assumptions != None else set()
         self._g: nx.Graph = nx.DiGraph()
 
     def generate_ctl_objects_for_rules(self, program: Program) -> Dict[str, clingo.Control]:
@@ -144,6 +145,7 @@ class SolveRunner():
         if (i > 20):
             return
         assumptions = self.create_true_symbols_from_solver_state(partial_model)
+        assumptions.extend(self._global_assumptions)
         ctl = self._get_ctl_for_rule(rule)
         new_partial_models = self._get_new_partial_models(assumptions, ctl, i)
         if assumptions == new_partial_models:  # this didnt add anything
@@ -175,6 +177,8 @@ class SolveRunner():
             for partial_model in partial_models:
                 # print(f"Continuing with {partial_model}")
                 assumptions = self.create_true_symbols_from_solver_state(partial_model)
+                print(f"Global assumptions: {self._global_assumptions}")
+                assumptions.extend(self._global_assumptions)
                 print(f"Assumptions: {assumptions}")
                 new_partial_models = self._get_new_partial_models(assumptions, ctl, i)
                 self._consolidate_new_solver_states(assumptions, new_partial_models)
@@ -183,9 +187,6 @@ class SolveRunner():
 
     def _get_new_partial_models(self, assumptions, ctl, i):
         solver_states_to_create = []
-        for x in ctl.symbolic_atoms.by_signature("y",1):
-            print(x.symbol, x.is_fact, x.is_external)
-        print(f"Symbolic atoms: {ctl.symbolic_atoms}")
         with ctl.solve(assumptions=assumptions, yield_=True) as handle:
             hacky_counter = 0
             for m in handle:

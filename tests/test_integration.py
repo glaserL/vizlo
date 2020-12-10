@@ -2,7 +2,7 @@ import clingo
 
 from debuggo.solve import solver
 from debuggo.display import graph
-from debuggo.main import Dingo, Debuggo
+from debuggo.main import Dingo, Debuggo, PythonModel
 import matplotlib.pyplot as plt
 
 ## Transformer
@@ -42,10 +42,13 @@ def test_print_all_models():
     prg = "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
     prg = "a.\n{b} :- a.\nc :- b.\n{d} :- b.\ne :- not d.\n:- b."
     prg = "{a}.\nb :- a. :- b."
+    prg = "x(1..100). {y(X)} :- x(X)."
+    #prg = "b :- a."
     #prg = "x(1). x(X) :- x(Y); Y<X; X < 10."
     #prg = "{x(1)}.\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
+    ctl.paint()
     plt.show()
     # TODO: remove curly braces and commas
     # TODO: rule only once
@@ -124,3 +127,19 @@ def test_no_segfault():
     ctl = Debuggo(["0"])
 
     ctl.add("base", [], "b.")
+
+def test_painting_without_initial_solving():
+    ctl = Debuggo(["0"])
+    # TODO: why do this global stuff if you can just grab them from the control object after grounding directly?
+    ctl.add("base", [], "x(0..5). {y(X)} :- x(X).")
+    ctl.ground([("base", [])])
+    interesting_model = set()
+    interesting_model.add(clingo.Function("y", [clingo.Number(5)]))
+    interesting_model.add(clingo.Function("y", [clingo.Number(3)]))
+    for x in range(6):
+        interesting_model.add(clingo.Function("x", [clingo.Number(x)]))
+
+    interesting_model = PythonModel(interesting_model)
+    ctl.add_to_painter(interesting_model)
+    ctl.paint()
+    plt.show()

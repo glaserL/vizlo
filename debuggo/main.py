@@ -5,20 +5,61 @@ from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResu
 from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
 from debuggo.display.graph import HeadlessPysideDisplay, PySideDisplay, MainWindow, NetworkxDisplay
 from debuggo.solve.solver import SolveRunner, SolveRunner, annotate_edges_in_nodes, INITIAL_EMPTY_SET
-from typing import List, Tuple, Any, Union
+from typing import List, Tuple, Any, Union, Set, Collection
 import matplotlib.pyplot as plt
 import networkx as nx
 
+# Types
+# TODO: can you add them to a single file and import them from child folders?
+RuleSet = List[str]
+Program = List[RuleSet]
+
+def program_to_string(program : Program) -> str:
+    prg = ""
+    for ruleSet in program:
+        prg += "\n".join(ruleSet)
+    return prg
+
+class PythonModel():
+    """"Lazy model that allows us to store stuff from a clingo model in python"""
+    def __init__(self, model : Union[Model, Set[Symbol]]):
+        if isinstance(model, Model):
+            self.model : Set[Symbol] = model.symbols(atoms=True)
+        else:
+            self.model = model
+
+    def __iter__(self):
+        return iter(self.model)
+
+def get_ground_universe(program : Program) -> Set[Symbol]:
+    prg = program_to_string(program)
+    ctl = Control()
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    ground_universe = set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
+    print(f"Ground universe: {ground_universe}")
+    return ground_universe
+
+def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
+
+    true_symbols : Set[Symbol] = set()
+    for model in models:
+        true_symbols.update(model.model)
+    print(f"Global truths: {true_symbols}")
+    global_assumptions = set(((symbol, False) for symbol in universe if not symbol in true_symbols))
+    print(f"Global assumptions: {global_assumptions}")
+    return global_assumptions
 
 class Debuggo(Control):
-    def add_to_painter(self, model):
-        if not hasattr(self, "painter"):
-            self.painter = list()
-        self.painter.append(set(model))
+
+    def add_to_painter(self, model : Union[Model,PythonModel]):
+        self.painter.append(PythonModel(model))
 
 
     def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20):
         self.control = Control(arguments, logger, message_limit)
+        self.painter : List[PythonModel] = list()
+        self.program : Program = list()
         self.transformer = JustTheRulesTransformer()
 
     def ground(self, parts: List[Tuple[str, List[Symbol]]], context: Any = None) -> None:
@@ -34,10 +75,9 @@ class Debuggo(Control):
 
     def add(self, name: str, parameters: List[str], program: str) -> None:
         self.control.add(name, parameters, program)
-        rules = self.transformer.transform(program)
-        print(f"Recieved {len(rules)} rules from transformer:\n{rules}")
-        self.anotherOne = SolveRunner(rules)
-        print(f"Created {len(rules)} rules:\n{rules}")
+        new_rules = self.transformer.transform(program)
+        self.program.extend(new_rules)
+        print(f"Recieved {len(new_rules)} rules from transformer:\n{new_rules}")
 
     def find_nodes_corresponding_to_stable_models(self, g, stable_models):
         correspoding_nodes = set()
@@ -65,12 +105,19 @@ class Debuggo(Control):
 
 
     def paint(self):
-        g = self.anotherOne.make_graph()
-        if hasattr(self, "painter"):
-            # User decided to print specific models.
-            interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
-            self.prune_graph_leading_to_models(g, interesting_nodes)
-        # we simply print all
+        if len(self.painter):
+            universe = get_ground_universe(self.program)
+            global_assumptions = make_global_assumptions(universe, self.painter)
+            solve_runner = SolveRunner(self.program, global_assumptions)
+        else:
+            solve_runner = SolveRunner(self.program)
+        # if len(self.painter):
+        #     # User decided to print specific models.
+        #
+        #     interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
+        #     self.prune_graph_leading_to_models(g, interesting_nodes)
+        # # we simply print all
+        g = solve_runner.make_graph()
         display = NetworkxDisplay(g)
         img = display.draw()
         return img
