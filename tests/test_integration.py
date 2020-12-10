@@ -2,7 +2,7 @@ import clingo
 
 from debuggo.solve import solver
 from debuggo.display import graph
-from debuggo.main import Dingo, Debuggo, PythonModel
+from debuggo.main import Debuggo, PythonModel
 import matplotlib.pyplot as plt
 
 ## Transformer
@@ -17,7 +17,7 @@ def test_networkx():
     viz.draw_networkx_graph()
     
 def test_instanciation():
-    dingo = Dingo()
+    dingo = Debuggo()
 
 def test_anotherOne():
     ctl = Debuggo()
