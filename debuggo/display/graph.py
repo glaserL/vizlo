@@ -21,11 +21,11 @@ class NetworkxDisplay():
         for m in model:
             print(f"Consuming {str(m)}, current_state = {tmp}")
             if len(tmp) >= how_many_per_line:
-                result_str += ", ".join(tmp)+"\n"
+                result_str += " ".join(tmp)+"\n"
                 tmp.clear()
             tmp.append(str(m))
-        result_str += ", ".join(tmp)
-        return f"{{{result_str}}}"
+        result_str += " ".join(tmp)
+        return f"{result_str}"
 
     def split_into_edge_lists(self, g : nx.Graph) -> Tuple:
         constraints = []
