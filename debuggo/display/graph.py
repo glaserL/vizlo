@@ -15,6 +15,8 @@ class NetworkxDisplay():
         self._ig : igraph.Graph = self.nxgraph_to_igraph(graph)
 
     def model_to_string(self, model):
+        if not len(model):
+            return "\u2205"
         result_str = ""
         how_many_per_line = math.sqrt(len(model))
         tmp = []
