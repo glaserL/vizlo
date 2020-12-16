@@ -29,6 +29,93 @@ class NetworkxDisplay():
         result_str += " ".join(tmp)
         return f"{result_str}"
 
+    def draw_rule_labels(self, G, pos,
+                         edge_labels=None,
+                         label_pos=0.5,
+                         font_size=10,
+                         font_color='k',
+                         font_family='sans-serif',
+                         font_weight='normal',
+                         alpha=1.0,
+                         bbox=None,
+                         ax=None,
+                         rotate=True,
+                         **kwds):
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.cbook as cb
+            import numpy
+        except ImportError:
+            raise ImportError("Matplotlib required for draw()")
+        except RuntimeError:
+            print("Matplotlib unable to open display")
+            raise
+
+        if ax is None:
+            ax = plt.gca()
+        if edge_labels is None:
+            labels = dict(((u, v), d) for u, v, d in G.edges(data=True))
+        else:
+            labels = edge_labels
+        text_items = {}
+
+        max_x = -math.inf
+        min_x = +math.inf
+        for x, _ in pos.values():
+            max_x = max(max_x, x)
+            min_x = min(min_x, x)
+        center_x = (max_x + min_x) / 2
+        print(f"Center x: {center_x}")
+
+        for (n1, n2), label in labels.items():
+            (x1, y1) = pos[n1]
+            (x2, y2) = pos[n2]
+            (x, y) = (center_x,
+                      y1 * label_pos + y2 * (1.0 - label_pos))
+
+
+            if rotate:
+                angle = numpy.arctan2(y2 - y1, x2 - x1) / (2.0 * numpy.pi) * 360  # degrees
+                # make label orientation "right-side-up"
+                if angle > 90:
+                    angle -= 180
+                if angle < - 90:
+                    angle += 180
+                # transform data coordinate angle to screen coordinate angle
+                xy = numpy.array((x, y))
+                trans_angle = ax.transData.transform_angles(numpy.array((angle,)),
+                                                            xy.reshape((1, 2)))[0]
+            else:
+                trans_angle = 0.0
+            # use default box of white with white border
+            if bbox is None:
+                bbox = dict(boxstyle='round',
+                            ec=(1.0, 1.0, 1.0),
+                            fc=(1.0, 1.0, 1.0),
+                            )
+
+            # set optional alignment
+            horizontalalignment = kwds.get('horizontalalignment', 'center')
+            verticalalignment = kwds.get('verticalalignment', 'center')
+
+            t = ax.text(x, y,
+                        label,
+                        size=font_size,
+                        color=font_color,
+                        family=font_family,
+                        weight=font_weight,
+                        horizontalalignment=horizontalalignment,
+                        verticalalignment=verticalalignment,
+                        rotation=trans_angle,
+                        transform=ax.transData,
+                        bbox=bbox,
+                        zorder=1,
+                        clip_on=True,
+                        )
+            text_items[(n1, n2)] = t
+
+        return text_items
+
     def split_into_edge_lists(self, g : nx.Graph) -> Tuple:
         constraints = []
         normal = []
@@ -98,24 +185,24 @@ class NetworkxDisplay():
                                 font_size=8,
                                 labels=node_labels)
 
-        nx.draw_networkx_edge_labels(self._ng, pos,
-                                     label_pos=.5,
-                                     rotate=False,
-                                     font_size=7,
-                                     font_family="monospace",
-                                     bbox={'facecolor' : 'White',
+        self.draw_rule_labels(self._ng, pos,
+                              label_pos=.5,
+                              rotate=False,
+                              font_size=7,
+                              font_family="monospace",
+                              bbox={'facecolor' : 'White',
                                            'edgecolor' : 'Red',
                                            'boxstyle':'round'},
-                                     edge_labels=recursive_labels)
-        nx.draw_networkx_edge_labels(self._ng, pos,
-                                     label_pos=.5,
-                                     rotate=False,
-                                     font_size=7,
-                                     font_family="monospace",
-                                     bbox={'facecolor' : 'White',
+                              edge_labels=recursive_labels)
+        self.draw_rule_labels(self._ng, pos,
+                              label_pos=.5,
+                              rotate=False,
+                              font_size=7,
+                              font_family="monospace",
+                              bbox={'facecolor' : 'White',
                                            'edgecolor' : 'Black',
                                            'boxstyle':'round'},
-                                     edge_labels=edge_labels)
+                              edge_labels=edge_labels)
 
     @staticmethod
     def _inject_for_drawing(g):
