@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from PySide2.QtWidgets import QApplication
 
 from debuggo.solve.solver import SolverState, annotate_edges_in_nodes
-from debuggo.display.graph import HeadlessPysideDisplay, MainWindow, PySideDisplay, NetworkxDisplay
+from debuggo.display.graph import NetworkxDisplay
 from debuggo.display.detail import HeadlessPySideDetailDisplay
 import igraph
 
@@ -193,3 +193,10 @@ def test_test():
     plt.clf()
     nx.draw(g, pos, with_labels=True)
     plt.show()
+
+def test_get_viz_size():
+    display = NetworkxDisplay(nx.DiGraph())
+    width, height = get_width_and_height_of_text_label("test")
+    assert width > 0
+    assert height > 0
+    assert width > height

@@ -1,4 +1,5 @@
 import clingo
+import networkx as nx
 
 from debuggo.solve import solver
 from debuggo.display import graph
@@ -141,5 +142,48 @@ def test_painting_without_initial_solving():
 
     interesting_model = PythonModel(interesting_model)
     ctl.add_to_painter(interesting_model)
+    ctl.paint()
+    plt.show()
+
+def test_that_iterating_over_tree_doesnt_return_node_twice():
+    g = nx.DiGraph()
+    g.add_edge("a", "b", rule="first")
+    g.add_edge("a", "c", rule="second")
+    g.add_edge("b", "d", rule="first")
+    assert len(g)-1 == len(list(g.edges(data=True)))
+
+def test_and_viz_queens():
+    queens = """
+    
+#const n = 3.
+
+% domain
+number(1..n).
+
+% alldifferent
+1 { q(X,Y) : number(Y) } 1 :- number(X).
+1 { q(X,Y) : number(X) } 1 :- number(Y).
+
+% remove conflicting answers
+:- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
+:- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
+:- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
+
+"""
+
+    ctl = Debuggo(["0"])
+    # TODO: why do this global stuff if you can just grab them from the control object after grounding directly?
+    ctl.add("base", [], queens)
+    ctl.ground([("base", [])])
+    print("ok??")
+
+    # interesting_model = set()
+    # interesting_model.add(clingo.Function("y", [clingo.Number(5)]))
+    # interesting_model.add(clingo.Function("y", [clingo.Number(3)]))
+    # for x in range(6):
+    #     interesting_model.add(clingo.Function("x", [clingo.Number(x)]))
+    #
+    # interesting_model = PythonModel(interesting_model)
+    #ctl.add_to_painter(interesting_model)
     ctl.paint()
     plt.show()
