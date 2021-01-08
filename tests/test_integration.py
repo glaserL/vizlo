@@ -51,9 +51,6 @@ def test_print_all_models():
     ctl.ground([("base", [])])
     ctl.paint()
     plt.show()
-    # TODO: remove curly braces and commas
-    # TODO: rule only once
-    # TODO: completely hide contstrained models
     # TODO: Draw choice rules different (arrow dotted)
     # TODO: Draw constraint rules differently (red)
     # TODO: only print what was added (as option) the sudoku program, tsp, from asp class
@@ -101,6 +98,15 @@ def test_adding_model_to_painter():
             ctl.add_to_painter(model)
     assert len(ctl.painter) > 0
 
+def test_dont_repeat_constraints():
+    ctl = Debuggo()
+    prg = "{a}. :- not a. b :- a."
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    ctl.paint()
+    plt.show()
+
+
 def test_finding_corresponding_nodes():
     ctl = Debuggo(["0"])
     prg = "{a}. b :- a."
@@ -132,7 +138,7 @@ def test_no_segfault():
 def test_painting_without_initial_solving():
     ctl = Debuggo(["0"])
     # TODO: why do this global stuff if you can just grab them from the control object after grounding directly?
-    ctl.add("base", [], "x(0..5). {y(X)} :- x(X).")
+    ctl.add("base", [], "x(0..4). {y(X)} :- x(X).")
     ctl.ground([("base", [])])
     interesting_model = set()
     interesting_model.add(clingo.Function("y", [clingo.Number(5)]))
@@ -155,10 +161,8 @@ def test_that_iterating_over_tree_doesnt_return_node_twice():
 def test_and_viz_queens():
     queens = """
     
-#const n = 3.
-
 % domain
-number(1..n).
+number(1..3).
 
 % alldifferent
 1 { q(X,Y) : number(Y) } 1 :- number(X).
@@ -170,7 +174,7 @@ number(1..n).
 :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
 
 """
-
+    #queens = "{a}. {b}. {c}. a :- b. b: - c. c:- a."
     ctl = Debuggo(["0"])
     # TODO: why do this global stuff if you can just grab them from the control object after grounding directly?
     ctl.add("base", [], queens)

@@ -132,7 +132,8 @@ def adjust_figure_size(pos, node_labels):
     rows = len(row_set)
     sys.stderr.write(f"w: {max_width}, h: {max_height}")
     cols = max([len(lst) for lst in tricky_map.values()])
-    return cols*max_width/100, max_height*rows*1.5/50
+    return cols*max_width/150, max_height*rows*1.5/10
+    # return cols*max_width/5, max_height*rows*1.5/5
 
 
 
@@ -259,12 +260,12 @@ class NetworkxDisplay():
         sys.stderr.write(str(figsize))
         plt.figure(figsize=figsize)
         # draw the node cricles.
-        draw_nodes(self._ng, pos,
+        #draw_nodes(self._ng, pos,
                    # node_color=node_color,
-                   alpha=0.9,
-                   node_size=node_size,
+        #           alpha=0.9,
+        #           node_size=node_size,
                    # cmap=plt.get_cmap(colormap))
-                   )
+        #           )
         # Draw edges into the positions
         normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
 
@@ -295,8 +296,20 @@ class NetworkxDisplay():
 
         nx.draw_networkx_labels(self._ng, pos,
                                 font_size=8,
+                              bbox={'facecolor': 'dodgerblue',
+                                    'edgecolor': 'deepskyblue',
+                                    'boxstyle': 'Round4',
+                                    'pad' : 1},
                                 labels=node_labels)
-
+        # Circle
+        # DArrow
+        # LArrow
+        # RArrow
+        # Round
+        # Round4
+        # Roundtooth
+        # Sawtooth
+        # Square
         self.draw_rule_labels(self._ng, pos,
                               label_pos=.5,
                               rotate=False,
@@ -309,7 +322,7 @@ class NetworkxDisplay():
         self.draw_rule_labels(self._ng, pos,
                               label_pos=.5,
                               rotate=False,
-                              font_size=7,
+                              font_size=10,
                               font_family="monospace",
                               bbox={'facecolor': 'White',
                                     'edgecolor': 'Black',

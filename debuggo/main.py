@@ -3,7 +3,7 @@ import sys
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
 from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
-from debuggo.display.graph import NetworkxDisplay
+from debuggo.display.graph import NetworkxDisplay, assert_no_bi_edges
 from debuggo.solve.solver import SolveRunner, SolveRunner, annotate_edges_in_nodes, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection
 import matplotlib.pyplot as plt
@@ -40,8 +40,10 @@ def get_ground_universe(program : Program) -> Set[Symbol]:
     print(f"Ground universe: {ground_universe}")
     return ground_universe
 
-def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
+def extract_ground_universe_from_control(ctl : Control) -> Set[Symbol]:
+    return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
 
+def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
     true_symbols : Set[Symbol] = set()
     for model in models:
         true_symbols.update(model.model)
@@ -52,7 +54,7 @@ def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonMo
 
 class Debuggo(Control):
 
-    def add_to_painter(self, model : Union[Model,PythonModel]):
+    def add_to_painter(self, model: Union[Model,PythonModel]):
         self.painter.append(PythonModel(model))
 
 
@@ -61,6 +63,10 @@ class Debuggo(Control):
         self.painter : List[PythonModel] = list()
         self.program : Program = list()
         self.transformer = JustTheRulesTransformer()
+        self._print_changes_only = True
+
+    def _set_print_only_changes(self, value: bool) -> None:
+        self._print_changes_only = value
 
     def ground(self, parts: List[Tuple[str, List[Symbol]]], context: Any = None) -> None:
         self.control.ground(parts, context)
