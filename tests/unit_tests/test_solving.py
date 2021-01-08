@@ -2,12 +2,12 @@ from debuggo.solve import solver
 from clingo import Control
 
 def get_transformed_test_program():
-    with open("/Users/glaser/Developer/cogsys/3_cci/debuggo/tests/program_transformed_holds.lp", encoding="utf-8") as f:
+    with open("/tests/program_transformed_holds.lp", encoding="utf-8") as f:
         reified_program = "".join(f.readlines())
     return reified_program
 
 def get_test_program():
-    with open("/Users/glaser/Developer/cogsys/3_cci/debuggo/tests/program.lp", encoding="utf-8") as f:
+    with open("/tests/program.lp", encoding="utf-8") as f:
         program = "".join(f.readlines())
     return program
 
@@ -42,13 +42,13 @@ def test_recursive_with_choice_before():
     prg = [["{a}."], ["c :- b.", "b :- c, not a."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
-    assert len(g) == 5
+    assert len(g) == 4
 
 def test_recursive_with_choice_within():
     prg = [["c :- b.", "{b} :- c, not a."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
-    assert len(g) == 6
+    assert len(g) == 2
 
 
 def test_simple_fact():
