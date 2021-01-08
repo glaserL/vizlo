@@ -1,14 +1,24 @@
 import sys
 from copy import copy
-from typing import List, Dict
+from typing import List, Dict, Set, Union
 
 import clingo
 import networkx as nx
 import logging
 
+from clingo import Control, Symbol
+
 EMERGENCY_EXIT_COUNTER = 0
 RuleSet = List[str]
 Program = List[RuleSet]
+
+
+def get_all_trues_from_assumption(assumptions) -> Set[Symbol]:
+    return set(atom for atom, truth in assumptions if truth)
+
+
+def extract_ground_universe_from_control(ctl: Control) -> Set[Symbol]:
+    return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
 
 
 class SolverState():
@@ -20,10 +30,13 @@ class SolverState():
     TODO: Also try to represent multi-model stable models
     """
 
-    def __init__(self, model, step=-1, falses=set()):
-        self.model = model
-        self.step = step
-        self.falses = falses
+    def __init__(self, model: Set, step: int = -1, falses: Set = set(), adds=None):
+        if isinstance(model, list):
+            model = set(model)
+        self.model: Set = model
+        self.step: int = step
+        self.falses: Set = falses
+        self.adds: Union[Set, None] = adds
 
     def __repr__(self):
         return f"{self.model}"
@@ -36,10 +49,13 @@ class SolverState():
     def __hash__(self):
         return id(self)
 
+    def is_still_a_candidate(self) -> bool:
+        return self.step == 0 or len(self.model) > 0
+
 
 class SolveRunner():
 
-    def __init__(self, program: Program, global_assumptions = None):
+    def __init__(self, program: Program, global_assumptions=None):
         self.EMERGENCY_EXIT_COUNTER = 0
         self.ctls = self.generate_ctl_objects_for_rules(program)
         self.prg: Program = program
@@ -59,7 +75,7 @@ class SolveRunner():
                     tmp_list = partial_program.copy()
                     tmp_list.append(rule)
                     ctls[rule] = tmp_list.copy()
-#                    ctls[rule] = self._make_new_control_and_ground(tmp_list)
+                #                    ctls[rule] = self._make_new_control_and_ground(tmp_list)
                 partial_program.extend(rule_set)
             else:
                 rule = rule_set[-1]
@@ -74,7 +90,7 @@ class SolveRunner():
         nodes: List[SolverState] = []
         for node in self._g:
             print(f"{node} at {node.step}")
-            if node.step == step:
+            if node.step == step and node.is_still_a_candidate():
                 nodes.append(node)
         return nodes
 
@@ -105,7 +121,8 @@ class SolveRunner():
         print(f"Working with {ctl}")
         new_partial_models = self._get_new_partial_models(assumptions, ctl, i)
         print(f"Recieved new_partial_models: {new_partial_models}")
-        if len(new_partial_models) and any(new_partial_model != partial_model for new_partial_model in new_partial_models):
+        if len(new_partial_models) and any(
+                new_partial_model != partial_model for new_partial_model in new_partial_models):
             print(f"Change in models occured: {new_partial_models}")
             self._consolidate_new_solver_states(assumptions, new_partial_models)
             self._update_graph(partial_model, rule, new_partial_models)
@@ -131,7 +148,7 @@ class SolveRunner():
                 print(f"did sth")
         print(f"results: {results}")
         if any(results):
-            print(f"Next! {rule_set} at {i+1}")
+            print(f"Next! {rule_set} at {i + 1}")
             self._recursive2(rule_set, i + 1)
 
     def make_graph2(self):
@@ -171,6 +188,7 @@ class SolveRunner():
             print(f"========{i}========Adding rule {rule}")
             current_prg.extend(rule)
             ctl = self._make_new_control_and_ground(current_prg)
+            global_assumptions = extract_ground_universe_from_control(ctl)
             # analytically find recursive components and add them at once
             partial_models = self.find_nodes_at_timestep(i)
             print(f"{rule} with {len(partial_models)} previous partial models.")
@@ -191,14 +209,16 @@ class SolveRunner():
             hacky_counter = 0
             for m in handle:
                 print(f"Model in handle:{m}")
-                syms = SolverState(m.symbols(atoms=True), i + 1)
+                model = set(m.symbols(atoms=True))
+                adds = model - get_all_trues_from_assumption(assumptions)
+                syms = SolverState(m.symbols(atoms=True), i + 1, adds=adds)
                 print(f"{assumptions} yielded {syms}")
                 solver_states_to_create.append(syms)
                 hacky_counter += 1
             if hacky_counter == 0:
                 # HACK: This means the candidate model became conflicting.
                 print(f"Something broke on {assumptions} at {i}")
-                solver_states_to_create.append(SolverState(set()))
+                solver_states_to_create.append(SolverState(set(), i+1))
             handle.wait()
             handle.get()
         return solver_states_to_create
@@ -231,7 +251,7 @@ class SolveRunner():
         corresponding_prg = self.ctls[rule]
         corresponding_ctl = self._make_new_control_and_ground(corresponding_prg)
 
-#        corresponding_ctl.ground([("base", [])])
+        #        corresponding_ctl.ground([("base", [])])
         print(f"Returning {corresponding_prg} for {rule}")
         return corresponding_ctl
 
