@@ -1,15 +1,20 @@
+import pytest
+
 from debuggo.solve import solver
 from clingo import Control
+
 
 def get_transformed_test_program():
     with open("/tests/program_transformed_holds.lp", encoding="utf-8") as f:
         reified_program = "".join(f.readlines())
     return reified_program
 
+
 def get_test_program():
     with open("/tests/program.lp", encoding="utf-8") as f:
         program = "".join(f.readlines())
     return program
+
 
 def create_ctl(program):
     ctl = Control()
@@ -17,20 +22,23 @@ def create_ctl(program):
     ctl.ground([("base", [])])
     return ctl
 
+
 def test_new_solver():
     anotherOne = solver.SolveRunner([["a."], ["{b} :- a."], ["c :- b."]])
     g = anotherOne.make_graph()
     assert len(g) == 6
 
+
 def test_long_distance_branching():
-    prg = [["a."],["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
+    prg = [["a."], ["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 12
     nodes = list(g.nodes)
-    lengths = [0,1,1,2,1,3,1,3,4,2,4,4]
+    lengths = [0, 1, 1, 2, 1, 3, 1, 3, 4, 2, 4, 4]
     for i, l in enumerate(lengths):
         assert len(nodes[i].model) == l
+
 
 def test_simple_recursive():
     prg = [["a."], ["c :- b.", "b :- c, not a."]]
@@ -38,11 +46,13 @@ def test_simple_recursive():
     g = slv.make_graph()
     assert len(g) == 3
 
+
 def test_recursive_with_choice_before():
     prg = [["{a}."], ["c :- b.", "b :- c, not a."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     assert len(g) == 4
+
 
 def test_recursive_with_choice_within():
     prg = [["c :- b.", "{b} :- c, not a."]]
@@ -59,6 +69,7 @@ def test_simple_fact():
     nodes = list(g.nodes)
     assert len(nodes[0].model) == 0
     assert len(nodes[1].model) == 1
+
 
 def test_function():
     prg = [["x(a)."]]
@@ -101,6 +112,8 @@ def test_solver_state_is_hashable():
     solver_state = solver.SolverState(None)
     assert hash(solver_state)
 
+
+@pytest.mark.skip(reason="This is left as a prototype for future work.")
 def test_recursion():
     "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
     prg = [["x(1)."], ["x(X) :- y(X).", "y(X) :- x(X-1); X<4."]]
