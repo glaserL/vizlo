@@ -1,74 +1,15 @@
-
 from copy import copy
 
 import clingo, heapq
+import networkx as nx
 from clingo import ast
 from typing import List
 
-
 RuleSet = List[str]
 Program = List[RuleSet]
-class ASPTransformer():
-    """
-    Transforms a given ASP program into a reified version.
-    """
+ASTRuleSet = List[clingo.ast.AST]
+ASTProgram = List[ASTRuleSet]
 
-    def __init__(self):
-        raise NotImplementedError
-
-    def transform(self, program):
-        print("DEBUGGING MODE")
-        return """
-h(a,1,(b)) :- b, not a.
-h(b,2,(c)) :- c, not b.
-h(c,3,(d)) :- d, not c.
-h(d,4,()) :- not d.
-#external d.
-#external c.
-#external b.
-#external a.
-% Original program.
-%a :- b.
-%b :- c.
-%c :- d.
-%d.
-"""
-
-class IdentityTransformer(ASPTransformer):
-
-    def __init__(self):
-        pass
-
-    def transform(self, program):
-        return program
-
-class HoldsTransformer(ASPTransformer):
-    def __init__(self):
-        pass
-
-    def transform(self, program):
-        transformed_lines = []
-        i = 1
-        atoms = set()
-        with open("error.log","w") as log:
-            for line in program.split("\n"):
-                if line.strip().startswith("%"):
-                    transformed_lines.append(line)
-                elif ":-" in line:
-                    split_rule = line.split(":-")
-                    head = split_rule[0].strip()
-                    literals = split_rule[1].split(",")
-                    pos_literals = []
-                    log.write(f"Found head: {head} :- {literals}\n")
-                    for lit in literals:
-                        if "not" not in lit:
-                            pos_literals.append(lit.strip())
-                        atoms.add(lit.replace("not","").strip())
-                transformed_lines.append(f"h({head},{i},({','.join(pos_literals)})) :- {','.join(pos_literals)}, not {head}.")
-            for atom in atoms:
-                transformed_lines.append(f"#external: {atom}.")
-    
-        return "\n".join(transformed_lines)
 
 class Visitor:
     def visit_children(self, x, *args, **kwargs):
@@ -89,7 +30,7 @@ class Visitor:
     def visit(self, x, *args, **kwargs):
         if isinstance(x, ast.AST):
             attr = "visit_" + str(x.type)
-            #print(f"{x} ({attr} (({hasattr(self, attr)})) {{{kwargs}}})")
+            # print(f"{x} ({attr} (({hasattr(self, attr)})) {{{kwargs}}})")
             if hasattr(self, attr):
                 return getattr(self, attr)(x, *args, **kwargs)
             return self.visit_children(x, *args, **kwargs)
@@ -119,7 +60,7 @@ class Transformer(Visitor):
         for y in x[:i]:
             yield y
         yield z
-        for y in x[i+1:]:
+        for y in x[i + 1:]:
             yield self.visit(y, *args, **kwargs)
 
     def visit_list(self, x, *args, **kwargs):
@@ -137,181 +78,101 @@ class Transformer(Visitor):
         return x
 
 
-
-class HeadBodyTransformer(Transformer):
-    def __init__(self):
-        self._reified_program = []
-        self._atoms_to_assign_as_external: List[clingo.ast.Function] = []
-
-    def visit_Rule(self, rule):#(\label{prg:dl:transformer:rule:begin}#)
-        head = rule.head
-        body = rule.body
-        print(f"Before:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
-        holds_func = clingo.ast.Function(head.location, clingo.ast.Symbol(head.location, clingo.Function("h")),[head], False)
-        holds_atom = clingo.ast.SymbolicAtom(holds_func)
-        holds_literal = clingo.ast.Literal(head.location, head.sign, holds_atom)
-        #head = self.visit(head)
-        print("####################")
-        body = self.visit(body)
-        print(self._atoms_to_assign_as_external)
-        body_as_func_argument = copy(body)
-        body_as_func_argument = [lit.atom.term for lit in body_as_func_argument]
-        body_as_holds = clingo.ast.Function(head.location, "", body_as_func_argument, False)
-        print(f"body_as_holds: {body_as_holds}")
-
-        negated_head = clingo.ast.Literal(head.location, head.sign.Negation, head.atom)
-        body.append(negated_head)
-        
-        #new_head = self.create_new_head(head)
-        linenumber = clingo.ast.Symbol(head.location, clingo.Number(head.location["begin"]["line"]))
-        head_as_term = head.atom.term
-        print(head_as_term.type)
-        self._atoms_to_assign_as_external.append(head_as_term.name)
-        holds_func = clingo.ast.Function(head.location, "h", [head_as_term, linenumber, body_as_holds], False)
-        holds_symbolicAtom = clingo.ast.SymbolicAtom(holds_func)
-        holds_literal = clingo.ast.Literal(head.location,head.sign, holds_symbolicAtom)
-        head = holds_literal
-        print(holds_literal)
-        print(self._atoms_to_assign_as_external)
-        
-        print("####################")
-        #if len(body):
-        #    body.extend(self.visit(body, neg=True))
-        # body.append(ast.Literal(rule.location, "", body[0]))
-        print(f"After:{head}:-{body} ({head.type}):-({[x.type for x in body] if isinstance(body, list) else body.type})")
-        rule = ast.Rule(rule.location, head, body)
-        print(f"Result:{rule} ({rule.type})")
-        print(self._atoms_to_assign_as_external)
-        return rule#(\label{prg:dl:transformer:rule:end}#)
-
-    def create_new_head(self, head):
-        print("====")
-        head_as_func = head.atom.term
-        holds_head_func = self.reify(head_as_func)
-        holds_symbolicAtom = clingo.ast.SymbolicAtom(holds_head_func)
-        holds_literal = clingo.ast.Literal(head.location,head.sign, holds_symbolicAtom)
-        print(holds_head_func)
-        print("====")
-    
-    def visit_Literal(self, literal, neg=False):
-        print(f"Visting literal: {literal}")
-        if neg:
-            literal.sign = literal.sign.Negation
-        else:
-            literal.sign = literal.sign
-        print(f"Returning literal: {literal}")
-        literal.atom = self.visit(literal.atom)
-        return literal
-
-    def visit_SymbolicAtom(self, atom, neg=False):
-        print(f"Visting symbolic atom: {atom}")
-        print(f"atom.term: {atom.term} ({atom.term.type})")
-        
-        if neg:
-            atom.term = self.visit(atom.term)
-        else:
-            atom.term = self.visit(atom.term)
-        print(f"Returning symbolic atom: {atom}")
-        return atom
-
-    def reify(self, func):
-        func_name_as_arg = clingo.ast.Symbol(func.location, clingo.Function(func.name))
-        func.name = "h"
-        func.arguments = [func_name_as_arg]
-        return func
-
-    def visit_Function(self, func, loc="body"):
-        print(f"Visting function: {func}")
-        print(f"{func.location} ({type(func.location)}))")
-        print(f"{func.name} ({type(func.name)}))")
-        print(f"{func.arguments} ({[x.type for x in func.arguments] if isinstance(func.arguments, list) else func.arguments.type}))")
-        print(f"{func.external} ({type(func.external)}))")
-        # if not len(func.arguments):
-            # new_func = self.reify(func)
-        # else:
-        new_func = func
-        print(f"Returning function: {new_func}")
-        return new_func
-
-    def visit_Symbol(self, symb):
-        print(f"Visiting symbol {symb}")
-        return symb
-
-
-    def transform(self, program):
-        prg = clingo.Control()
-        with prg.builder() as b:
-            t = HeadBodyTransformer()
-            clingo.parse_program(
-                program,
-                lambda stm: self.funcy(b, t, stm)) # stm mean line in code
-        self._append_externals_to_program(self._reified_program, self._atoms_to_assign_as_external)
-        return self._reified_program
-    
-    def _append_externals_to_program(self, program, externals):
-        for external in externals:
-            program.append(f"#external {external}.")
-    
-    def funcy(self, b, t, stm):
-        print("One funcy call.")
-        print(stm)
-        result = t.visit(stm)
-        if str(stm.type) == "Rule":
-            self._atoms_to_assign_as_external.append(stm.head)
-        print(f"Funcy result: {result}")
-        b.add(result)
-        self._reified_program.append(result)
-        print("funcy call end.")
-
-    def get_reified_program(self) -> clingo.ast.AST:
-        return self._reified_program
-
-    def get_reified_program_as_str(self) -> str:
-        prg_as_str = "\n".join([str(x) for x in self._reified_program])
-        print(prg_as_str)
-        return prg_as_str
-
-
-
 class JustTheRulesTransformer(Transformer):
 
     def __init__(self):
         super(JustTheRulesTransformer, self).__init__()
-        self.within_recursive = False
 
     def visit_Program(self, program):
-        if program.name == "recursive":
-            #print("!!")
-            #print(f"B:{self.within_recursive}")
-            self.within_recursive = not self.within_recursive
-            #print(f"A:{self.within_recursive}")
+        pass
 
-    def transform(self, program) -> Program:
-        prg = clingo.Control()
-        normal_rules = []
-        recursive_rules = []
-        with prg.builder() as b:
-            t = JustTheRulesTransformer()
-            clingo.parse_program(
-                program,
-                lambda stm: t.funcy(normal_rules, recursive_rules, t, stm))
+    def _split_program_into_rules(self, program: str) -> ASTRuleSet:
+        rules = []
+        clingo.parse_program(
+            program,
+            lambda stm: add_to_list_if_is_not_program(stm, rules))
+        return rules
 
-        if len(recursive_rules):
-            normal_rules.append(recursive_rules)
-        return normal_rules
+    def transform(self, program, sort=True) -> ASTProgram:
+        rules = self._split_program_into_rules(program)
+        if sort:
+            rules = self.sort(rules)
+        else:
+            rules = [[rule] for rule in rules]
+        return rules
 
-    def funcy(self, normal_rules: Program, recursive_rules: RuleSet, t, stm):
-        rule = t.visit(stm)
-        #print(rule)
-        #print(f"within: {self.within_recursive}")
-        if rule:
-            rule = str(rule)
-            if self.within_recursive:
-                recursive_rules.append(rule)
+    def sort(self, program: ASTRuleSet) -> ASTProgram:
+        sorted_program = sort_program_by_dependencies(program)
+        rules = []
+        for rule_set in sorted_program:
+            rules.append(parse_rule_set(rule_set))
+        return rules
+
+
+def make_dependency_graph(rules: List[clingo.ast.Rule]):
+    g = nx.DiGraph()
+    for x in rules:
+        for y in rules:
+            x_head = x.head
+            y_body = y.body
+            if len(y_body) > 0:
+                for y_lit in y_body:
+                    if y_lit == x_head:
+                        g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
             else:
-                if recursive_rules:
-                    recursive_rules.append(rule)
-                    normal_rules.append(recursive_rules)
-                    recursive_rules.clear()
-                else:
-                    normal_rules.append([rule])
+                g.add_node(frozenset([str(x)]))
+    return g
+
+
+def merge_nodes(nodes):
+    old = set()
+    for x in nodes:
+        old.update(x)
+    return frozenset(old)
+
+
+def merge_cycles(g: nx.Graph) -> nx.Graph:
+    mapping = {}
+    for cycle in nx.algorithms.cycles.simple_cycles(g):
+        merge_node = merge_nodes(cycle)
+        mapping.update({old_node: merge_node for old_node in cycle})
+
+    return nx.relabel_nodes(g, mapping)
+
+
+def remove_eigenkanten(g):
+    remove_edges = []
+    for edge in g.edges:
+        u, v = edge
+        if u == v:
+            remove_edges.append(edge)
+
+    for edge in remove_edges:
+        g.remove_edge(*edge)
+    return g
+
+
+def sort_program_by_dependencies(parse: ASTRuleSet) -> Program:
+    print(f"Parse: {parse} ({len(parse)})")
+    deps = make_dependency_graph(parse)
+    deps = merge_cycles(deps)
+    deps = remove_eigenkanten(deps)
+    program = list(nx.topological_sort(deps))
+    return program
+
+
+def add_to_list_if_is_not_program(rule: clingo.ast.AST, lst: List):
+    if rule is not None and not rule.type == clingo.ast.ASTType.Program:
+        lst.append(rule)
+
+
+def parse_rule_set(rule_set: RuleSet) -> ASTRuleSet:
+    ast_rule_set = []
+    for rule in rule_set:
+        clingo.parse_program(rule, lambda ast_rule: add_to_list_if_is_not_program(ast_rule, ast_rule_set))
+    return ast_rule_set
+
+
+def transform(program: str, sort: bool = True):
+    t = JustTheRulesTransformer()
+    return t.transform(program, sort)
