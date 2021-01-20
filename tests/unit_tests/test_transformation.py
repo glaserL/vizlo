@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 from debuggo.transform import transform
-from debuggo.transform.transform import sort_program_by_dependencies, make_dependency_graph
+from debuggo.transform.transform import make_dependency_graph
 
 
 def are_two_lists_identical(a, b):
@@ -82,19 +82,34 @@ def test_return_type_is_AST():
 
 
 def test_dependent_choice_rule():
-    prg = "a. {b} :- a. b :- a."
+    prg = "{a}. {b} :- a. b :- a."
     t = transform.JustTheRulesTransformer()
     split = t._split_program_into_rules(prg)
     print(f"??{split}")
-    g = make_dependency_graph(split)
+    g = make_dependency_graph(split, t._dependency_map)
     assert len(g) == 3
+    assert len(g.edges) == 2
+    nx.draw(g,with_labels=True)
+    plt.show()
 
+def test_creation_of_depedency_graph_during_transformation():
+    prg = "{a;f;g}. {b} :- a. b :- a."
+    t = transform.JustTheRulesTransformer()
+    sort = t.transform(prg)
+    assert len(sort) == 3
+    d = t._dependency_map
+    print(d)
+    assert len(d) == 4
+    assert len(d["a"]) == 1
+    assert len(d["f"]) == 1
+    assert len(d["g"]) == 1
+    assert len(d["b"]) == 2
 
 def test_single_rule_dependency_graph():
     prg = "a."
     t = transform.JustTheRulesTransformer()
     split = t._split_program_into_rules(prg)
-    g = make_dependency_graph(split)
+    g = make_dependency_graph(split, t._dependency_map)
     assert len(g) == 1
 
 def test_parameterized_sort():
@@ -108,6 +123,23 @@ def test_parameterized_sort():
     assert len(sorted)
     assert is_str_list_and_ast_list_identical(sorted[0], ["a."])
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
+
+def test_sort_with_variables():
+    prg = "x(X) :- y(X). y(X) :- z(X). z(1..3)."
+    sorted = transform.transform(prg)
+    assert len(sorted) == 3
+    assert is_str_list_and_ast_list_identical(sorted[0], ["z((1..3))."])
+    assert is_str_list_and_ast_list_identical(sorted[1], ["y(X) :- z(X)."])
+    assert is_str_list_and_ast_list_identical(sorted[2], ["x(X) :- y(X)."])
+
+
+def test_transform_choice_in_beginning():
+    queens = "{a}. b :- a. c :- b."
+    sorted = transform.transform(queens)
+    assert len(sorted) == 3
+    assert is_str_list_and_ast_list_identical(sorted[0], ["{ a :  }."])
+    assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
+    assert is_str_list_and_ast_list_identical(sorted[2], ["c :- b."])
 
 
 def test_transform_without_instanciation():

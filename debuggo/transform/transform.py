@@ -3,7 +3,7 @@ from copy import copy
 import clingo, heapq
 import networkx as nx
 from clingo import ast
-from typing import List
+from typing import List, Dict
 
 RuleSet = List[str]
 Program = List[RuleSet]
@@ -78,20 +78,37 @@ class Transformer(Visitor):
         return x
 
 
-
 class JustTheRulesTransformer(Transformer):
 
     def __init__(self):
         super(JustTheRulesTransformer, self).__init__()
+        self._dependency_map = dict()
 
     def visit_Program(self, program):
         pass
+
+    def visit_Rule(self, rule):
+        head = rule.head
+        self.visit(head, rule=rule)
+        return rule
+
+    def visit_Literal(self, literal, rule=None):
+        if rule is not None:
+            hashable_rule = str(rule)
+            hashable_literal = str(literal)
+            tmp = self._dependency_map.get(hashable_literal, list())
+            tmp.append(rule)
+            self._dependency_map[hashable_literal] = tmp
+            # tmp = self._dependency_map.get(hashable_rule, list())
+            # tmp.append(literal)
+            # self._dependency_map[hashable_rule] = tmp
+        return literal
 
     def _split_program_into_rules(self, program: str) -> ASTRuleSet:
         rules = []
         clingo.parse_program(
             program,
-            lambda stm: add_to_list_if_is_not_program(stm, rules))
+            lambda stm: add_to_list_if_is_not_program(self.visit(stm), rules))
         return rules
 
     def transform(self, program, sort=True) -> ASTProgram:
@@ -102,27 +119,50 @@ class JustTheRulesTransformer(Transformer):
             rules = [[rule] for rule in rules]
         return rules
 
+    def sort_program_by_dependencies(self, parse: ASTRuleSet) -> Program:
+        print(f"Parse: {parse} ({len(parse)})")
+        deps = make_dependency_graph(parse, self._dependency_map)
+        deps = merge_cycles(deps)
+        deps = remove_eigenkanten(deps)
+        program = list(nx.topological_sort(deps))
+        return program
+
     def sort(self, program: ASTRuleSet) -> ASTProgram:
-        sorted_program = sort_program_by_dependencies(program)
+        sorted_program = self.sort_program_by_dependencies(program)
         rules = []
         for rule_set in sorted_program:
             rules.append(parse_rule_set(rule_set))
         return rules
 
-
-def make_dependency_graph(rules: List[clingo.ast.Rule]):
+def make_dependency_graph(rules: List[clingo.ast.Rule], dependencies: Dict[str, List[clingo.ast.AST]]):
     g = nx.DiGraph()
-    for x in rules:
-        for y in rules:
-            x_head = x.head
-            y_body = y.body
-            if len(y_body) > 0:
-                for y_lit in y_body:
-                    if y_lit == x_head:
-                        g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
-            else:
-                g.add_node(frozenset([str(x)]))
+    for rule in rules:
+        body = rule.body
+        rule_as_str = str(rule)
+        if len(body) > 0:
+            for e in body:
+                deps = dependencies.get(str(e), set())
+                for dep in deps:
+                    g.add_edge(frozenset([str(dep)]), frozenset([rule_as_str]))
+        else:
+            g.add_node(frozenset([str(rule)]))
     return g
+
+
+#
+# def make_dependency_graph(rules: List[clingo.ast.Rule], dependencies: Dict[str, List[clingo.ast.AST]]):
+#     g = nx.DiGraph()
+#     for x in rules:
+#         for y in rules:
+#             x_head = x.head
+#             y_body = y.body
+#             if len(y_body) > 0:
+#                 for y_lit in y_body:
+#                     if y_lit == x_head:
+#                         g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
+#             else:
+#                 g.add_node(frozenset([str(x)]))
+#     return g
 
 
 def merge_nodes(nodes):
@@ -153,15 +193,6 @@ def remove_eigenkanten(g):
     return g
 
 
-def sort_program_by_dependencies(parse: ASTRuleSet) -> Program:
-    print(f"Parse: {parse} ({len(parse)})")
-    deps = make_dependency_graph(parse)
-    deps = merge_cycles(deps)
-    deps = remove_eigenkanten(deps)
-    program = list(nx.topological_sort(deps))
-    return program
-
-
 def add_to_list_if_is_not_program(rule: clingo.ast.AST, lst: List):
     if rule is not None and not rule.type == clingo.ast.ASTType.Program:
         lst.append(rule)
@@ -183,6 +214,7 @@ class DependentAtomsTransformer(Transformer):
 
     def __init__(self):
         self.dependency_map = {}
+
     #
     def visit_Rule(self, rule):  # (\label{prg:dl:transformer:rule:begin}#)
         head = rule.head
@@ -190,6 +222,7 @@ class DependentAtomsTransformer(Transformer):
         self.visit(head, loc="head", rule=rule)
         self.visit(body, loc="body", rule=rule)
         return rule
+
     #
     # def visit_Literal(self, literal, rule=None, loc=None):
     #     if loc == "head":
@@ -206,7 +239,7 @@ class DependentAtomsTransformer(Transformer):
 
     def visit_Function(self, func, rule=None, loc=None):
         if loc == "head":
-            #print(f"{func} in {rule} ({loc})")
+            # print(f"{func} in {rule} ({loc})")
             strrule = str(rule)
             tmp = self.dependency_map.get(strrule, [])
             tmp.append(func)
@@ -218,7 +251,6 @@ class DependentAtomsTransformer(Transformer):
             program,
             lambda stm: self.funcy(stm))  # stm mean line in code
         return self.dependency_map
-
 
     def funcy(self, stm):
         result = self.visit(stm)
