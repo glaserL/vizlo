@@ -183,35 +183,41 @@ class DependentAtomsTransformer(Transformer):
 
     def __init__(self):
         self.dependency_map = {}
-
+    #
     def visit_Rule(self, rule):  # (\label{prg:dl:transformer:rule:begin}#)
         head = rule.head
         body = rule.body
         self.visit(head, loc="head", rule=rule)
         self.visit(body, loc="body", rule=rule)
         return rule
+    #
+    # def visit_Literal(self, literal, rule=None, loc=None):
+    #     if loc == "head":
+    #         print(f"{literal} in {rule} ({loc})")
+    #         strrule = str(rule)
+    #         tmp = self.dependency_map.get(strrule, [])
+    #         tmp.append(literal)
+    #         self.dependency_map[strrule] = tmp
+    #     print(self.dependency_map)
+    #     return literal
+    #
+    # def visit_SymbolicAtom(self, atom, loc=None):
+    #     return atom
 
-    def visit_Literal(self, literal, rule=None, loc=None):
+    def visit_Function(self, func, rule=None, loc=None):
         if loc == "head":
-            print(f"{literal} in {rule} ({loc})")
+            #print(f"{func} in {rule} ({loc})")
             strrule = str(rule)
             tmp = self.dependency_map.get(strrule, [])
-            tmp.append(str(literal))
+            tmp.append(func)
             self.dependency_map[strrule] = tmp
-        print(self.dependency_map)
-        return literal
-
-    def visit_SymbolicAtom(self, atom, loc=None):
-        return atom
-
-    def visit_Function(self, func, loc=None):
-        new_func = func
-        return new_func
+        return func
 
     def make(self, program):
         clingo.parse_program(
             program,
             lambda stm: self.funcy(stm))  # stm mean line in code
+        return self.dependency_map
 
 
     def funcy(self, stm):

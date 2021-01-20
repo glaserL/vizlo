@@ -23,6 +23,16 @@ def get_all_trues_from_assumption(assumptions) -> Set[Symbol]:
 # def extract_ground_universe_from_control(ctl: Control) -> Set[Symbol]:
 #    return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
 
+def match(symbol: clingo.Symbol, name: str, arity: int) -> bool:
+    return symbol.name == name and len(symbol.arguments) == arity
+
+
+def matches(clingo_symbol: clingo.Symbol, ast_symbol: clingo.ast.Symbol) -> bool:
+    arity = len(ast_symbol.arguments)
+    name = ast_symbol.name
+    result = match(clingo_symbol, name, arity)
+    return result
+
 
 class SolverState():
     """
@@ -58,7 +68,7 @@ class SolverState():
 
 class OneSolveMaker:
 
-    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads = set()):
+    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads=set()):
         self.main = main
         self.ctl = ctl
         self.rule = rule
@@ -70,7 +80,6 @@ class OneSolveMaker:
         x = x.elements
         print(x)
         return rule.head.literal.symbol
-
 
     def run(self, i):
         # analytically find recursive components and add them at once
@@ -107,13 +116,14 @@ class OneSolveMaker:
 
     def create_true_symbols_from_solver_state(self, s):
         syms = []
+        print(f"IN: {s}")
         for true in s.model:
             syms.append((true, True))
         for false in s.falses:
-            syms.append((false, False))
+            if not any((matches(false, symbol_in_head) for symbol_in_head in self.symbols_in_heads)):
+                syms.append((false, False))
+        print(f"OUT: {syms}")
         return syms
-
-
 
 
 def update_falses_in_solver_states(sss):
@@ -164,9 +174,9 @@ class SolveRunner:
             current_prg.extend(rule_set)
             print(rule_set)
             ctl = _make_new_control_and_ground(current_prg)
-            symbols_in_heads = set()
+            symbols_in_heads = list()
             for rule in rule_set:
-                symbols_in_heads.update(symbols_in_heads_map.get(rule, set()))
+                symbols_in_heads.extend(symbols_in_heads_map.get(str(rule), set()))
             self._solvers.append(OneSolveMaker(self, ctl, rule_set, symbols_in_heads))
 
     def generate_ctl_objects_for_rules2(self, program: Program) -> Dict[str, clingo.Control]:

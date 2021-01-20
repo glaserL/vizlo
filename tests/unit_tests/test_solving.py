@@ -5,7 +5,7 @@ from clingo import Control
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from debuggo.transform.transform import parse_rule_set
+from debuggo.transform.transform import parse_rule_set, DependentAtomsTransformer
 
 
 def get_transformed_test_program():
@@ -33,11 +33,15 @@ def test_new_solver():
     assert len(g) == 6
 
 def test_invalidating_previous_assumptions():
-    prg = [["{b}."], ["b :- not b."]]
+    prg = [["a."], ["{b}."], ["b :- not b."]]
+    str_prg = "\n".join(["\n".join(x) for x in prg])
     prg = [parse_rule_set(rule) for rule in prg]
-    slv = solver.SolveRunner(prg)
+    dependencies = DependentAtomsTransformer().make(str_prg)
+
+    slv = solver.SolveRunner(prg, symbols_in_heads_map=dependencies)
     g = slv.make_graph()
-    print(g.nodes)
+    nx.draw(g, with_labels=True)
+    plt.show()
     assert len(g.nodes) == 5
 
 def test_long_distance_branching():
@@ -62,8 +66,7 @@ def test_recursive_with_choice_before():
     prg = [["{a}."], ["c :- a.", "b :- c. c :- b."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
-    nx.draw(g, with_labels=True)
-    plt.show()
+
     assert len(g) == 4
 
 
