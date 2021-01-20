@@ -1,10 +1,11 @@
 import sys
 
+import clingo
 from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
-from debuggo.transform.transform import HeadBodyTransformer, JustTheRulesTransformer
+from debuggo.transform.transform import JustTheRulesTransformer
 from debuggo.display.graph import NetworkxDisplay, assert_no_bi_edges
-from debuggo.solve.solver import SolveRunner, SolveRunner, annotate_edges_in_nodes, INITIAL_EMPTY_SET
+from debuggo.solve.solver import SolveRunner, SolveRunner, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -13,6 +14,7 @@ import networkx as nx
 # TODO: can you add them to a single file and import them from child folders?
 RuleSet = List[str]
 Program = List[RuleSet]
+
 
 def program_to_string(program : Program) -> str:
     prg = ""
@@ -54,7 +56,7 @@ def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonMo
 
 class Debuggo(Control):
 
-    def add_to_painter(self, model: Union[Model,PythonModel]):
+    def add_to_painter(self, model: Union[Model, PythonModel]):
         self.painter.append(PythonModel(model))
 
 
@@ -109,8 +111,7 @@ class Debuggo(Control):
         after = len(graph)
         print(f"Removed {before-after} of {before} nodes ({(before-after)/before})")
 
-
-    def paint(self):
+    def make_graph(self):
         if len(self.painter):
             universe = get_ground_universe(self.program)
             global_assumptions = make_global_assumptions(universe, self.painter)
@@ -124,11 +125,17 @@ class Debuggo(Control):
         #     self.prune_graph_leading_to_models(g, interesting_nodes)
         # # we simply print all
         g = solve_runner.make_graph()
+        return g
+    def paint(self):
+        g = self.make_graph()
         display = NetworkxDisplay(g)
-        #interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
-        #self.prune_graph_leading_to_models(g, interesting_nodes)
         img = display.draw()
         return img
+
+    def add_and_ground(self, prg):
+        """Short cut for complex add and ground calls, should only be used for debugging purposes.s"""
+        self.add("base", [], prg)
+        self.ground([("base", [])])
 
 
 def _main():

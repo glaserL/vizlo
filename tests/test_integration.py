@@ -10,6 +10,18 @@ from debuggo.display import graph
 from debuggo.main import Debuggo, PythonModel
 import matplotlib.pyplot as plt
 
+from debuggo.solve.solver import SolveRunner
+
+
+def test_clingo_ast_rules_are_passed_around():
+    ctl = Debuggo()
+    ctl.add_and_ground("b. a :- b.")
+
+    transformed_program = ctl.program
+    mocked_solve_runner = SolveRunner(transformed_program)
+    assert isinstance(mocked_solve_runner._solvers[0].rule, clingo.ast.AST)
+    assert isinstance(mocked_solve_runner.prg[0], clingo.ast.AST)
+    assert isinstance(ctl.program[0], clingo.ast.AST)
 
 ## Transformer
 def test_networkx():

@@ -132,8 +132,8 @@ def adjust_figure_size(pos, node_labels):
     rows = len(row_set)
     sys.stderr.write(f"w: {max_width}, h: {max_height}")
     cols = max([len(lst) for lst in tricky_map.values()])
-    return cols*max_width/150, max_height*rows*1.5/10
-    # return cols*max_width/5, max_height*rows*1.5/5
+    #return cols*max_width/150, max_height*rows*1.5/10
+    return cols*max_width/2, max_height*rows*1.5/5
 
 
 
@@ -257,6 +257,7 @@ class NetworkxDisplay():
         #nodes = self.make_nodes_around_node_labels(node_labels)
 
         figsize = adjust_figure_size(pos, node_labels)
+        figsize = (4,5)
         sys.stderr.write(str(figsize))
         plt.figure(figsize=figsize)
         # draw the node cricles.

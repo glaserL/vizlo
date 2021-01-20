@@ -2,6 +2,10 @@ import pytest
 
 from debuggo.solve import solver
 from clingo import Control
+import matplotlib.pyplot as plt
+import networkx as nx
+
+from debuggo.transform.transform import parse_rule_set
 
 
 def get_transformed_test_program():
@@ -28,6 +32,13 @@ def test_new_solver():
     g = anotherOne.make_graph()
     assert len(g) == 6
 
+def test_invalidating_previous_assumptions():
+    prg = [["{b}."], ["b :- not b."]]
+    prg = [parse_rule_set(rule) for rule in prg]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    print(g.nodes)
+    assert len(g.nodes) == 5
 
 def test_long_distance_branching():
     prg = [["a."], ["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
@@ -48,9 +59,11 @@ def test_simple_recursive():
 
 
 def test_recursive_with_choice_before():
-    prg = [["{a}."], ["c :- b.", "b :- c, not a."]]
+    prg = [["{a}."], ["c :- a.", "b :- c. c :- b."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    nx.draw(g, with_labels=True)
+    plt.show()
     assert len(g) == 4
 
 
