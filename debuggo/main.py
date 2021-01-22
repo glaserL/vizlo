@@ -1,7 +1,6 @@
 import sys
 
 import clingo
-from PySide2.QtWidgets import QApplication, QHBoxLayout
 from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
 from debuggo.transform.transform import JustTheRulesTransformer
 from debuggo.display.graph import NetworkxDisplay, assert_no_bi_edges
@@ -16,10 +15,10 @@ RuleSet = List[str]
 Program = List[RuleSet]
 
 
-def program_to_string(program : Program) -> str:
+def program_to_string(program: Program) -> str:
     prg = ""
     for ruleSet in program:
-        prg += "\n".join(ruleSet)
+        prg += "\n".join([str(rule) for rule in ruleSet])
     return prg
 
 class PythonModel():

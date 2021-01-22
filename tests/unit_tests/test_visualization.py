@@ -3,7 +3,6 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-from PySide2.QtWidgets import QApplication
 
 from debuggo.solve.solver import SolverState, annotate_edges_in_nodes
 from debuggo.display.graph import NetworkxDisplay, get_width_and_height_of_text_label

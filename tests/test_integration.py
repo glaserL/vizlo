@@ -68,17 +68,17 @@ def test_print_all_models():
 
 
 # Milestones:
-# Expand recursion steps
-# Clickable
-# Independent of order
-# Efficiency
+# Expand recursion steps NO
+# Clickable NO
+# Independent of order YES
+# Efficiency YES
 
 # Try with a real world program
 
 def test_painting_specific_models_is_fast():
     expensive_program = "a(1..15). {b(X)} :- a(X)."
     begin = time.time()
-    interesting_model = [clingo.Function("a", [i]) for i in range(15)]
+    interesting_model = [clingo.Function("a", [i], True) for i in range(15)]
     ctl = Debuggo(["0"])
     ctl.add_and_ground(expensive_program)
     ctl.add_to_painter(interesting_model)

@@ -99,7 +99,6 @@ class OneSolveMaker:
         with ctl.solve(assumptions=assumptions, yield_=True) as handle:
             hacky_counter = 0
             for m in handle:
-                print(f"Model in handle:{m}")
                 model = set(m.symbols(atoms=True))
                 adds = model - get_all_trues_from_assumption(assumptions)
                 syms = SolverState(m.symbols(atoms=True), i + 1, adds=adds)
@@ -110,19 +109,20 @@ class OneSolveMaker:
                 # HACK: This means the candidate model became conflicting.
                 print(f"Something broke on {assumptions} at {i}")
                 solver_states_to_create.append(SolverState(set(), i + 1))
-            handle.wait()
-            handle.get()
+            print(f"Is conflicting: {ctl.is_conflicting}")
+            handle.wait() # TODO: Necessary??
+            result = handle.get()
+            print(f"Solve Result: {result} ({hacky_counter})")
+            print(f"{result.satisfiable}")
         return solver_states_to_create
 
     def create_true_symbols_from_solver_state(self, s):
         syms = []
-        print(f"IN: {s}")
         for true in s.model:
             syms.append((true, True))
         for false in s.falses:
             if not any((matches(false, symbol_in_head) for symbol_in_head in self.symbols_in_heads)):
                 syms.append((false, False))
-        print(f"OUT: {syms}")
         return syms
 
 
