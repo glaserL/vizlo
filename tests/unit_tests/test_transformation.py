@@ -85,31 +85,42 @@ def test_dependent_choice_rule():
     prg = "{a}. {b} :- a. b :- a."
     t = transform.JustTheRulesTransformer()
     split = t._split_program_into_rules(prg)
-    print(f"??{split}")
-    g = make_dependency_graph(split, t._dependency_map)
-    assert len(g) == 3
-    assert len(g.edges) == 2
+
+    g = make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
     nx.draw(g,with_labels=True)
     plt.show()
+    assert len(g) == 3
+    assert len(g.edges) == 2
 
-def test_creation_of_depedency_graph_during_transformation():
+def test_formula_in_rule():
+    prg = "x(X) :- y(X), X != 2. y(1..5)."
+    sort = transform.transform(prg)
+    assert len(sort) == 2
+    assert is_str_list_and_ast_list_identical(sort[0], ["y((1..5))."])
+    assert is_str_list_and_ast_list_identical(sort[1], ["x(X) :- y(X); X!=2."])
+
+
+
+def test_creation_of_dependency_maps_during_transformation():
     prg = "{a;f;g}. {b} :- a. b :- a."
     t = transform.JustTheRulesTransformer()
     sort = t.transform(prg)
     assert len(sort) == 3
-    d = t._dependency_map
-    print(d)
-    assert len(d) == 4
-    assert len(d["a"]) == 1
-    assert len(d["f"]) == 1
-    assert len(d["g"]) == 1
-    assert len(d["b"]) == 2
+    heads = t._head_signature2rule
+    bodies = t._body_signature2rule
+    assert len(heads) == 4
+    assert len(bodies) == 1
+    assert len(heads[("a",0)]) == 1
+    assert len(heads[("f",0)]) == 1
+    assert len(heads[("g",0)]) == 1
+    assert len(heads[("b",0)]) == 2
+    assert len(bodies[("a",0)]) == 2
 
 def test_single_rule_dependency_graph():
     prg = "a."
     t = transform.JustTheRulesTransformer()
     split = t._split_program_into_rules(prg)
-    g = make_dependency_graph(split, t._dependency_map)
+    g = make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
     assert len(g) == 1
 
 def test_parameterized_sort():
@@ -132,6 +143,15 @@ def test_sort_with_variables():
     assert is_str_list_and_ast_list_identical(sorted[1], ["y(X) :- z(X)."])
     assert is_str_list_and_ast_list_identical(sorted[2], ["x(X) :- y(X)."])
 
+def test_transformation_with_choice_on_variables():
+    prg = "a((1..15)). { b(X) :  } :- a(X)."
+    t = transform.JustTheRulesTransformer()
+    sorted = t.transform(prg)
+    g = make_dependency_graph(sorted, t._head_signature2rule,t._body_signature2rule)
+    nx.draw(g, with_labels=True)
+    plt.show()
+    assert len(g) == 2
+    assert len(sorted) == 2
 
 def test_transform_choice_in_beginning():
     queens = "{a}. b :- a. c :- b."
