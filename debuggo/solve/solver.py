@@ -72,7 +72,8 @@ class OneSolveMaker:
         self.main = main
         self.ctl = ctl
         self.rule = rule
-        self.symbols_in_heads = symbols_in_heads
+        self.singatures_in_heads = symbols_in_heads
+
 
     def symbols_in_head(self, rule: clingo.ast.Rule):
         print(type(rule.head))
@@ -121,8 +122,8 @@ class OneSolveMaker:
         for true in s.model:
             syms.append((true, True))
         for false in s.falses:
-            if not any((matches(false, symbol_in_head) for symbol_in_head in self.symbols_in_heads)):
-                syms.append((false, False))
+            #if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
+            syms.append((false, False))
         return syms
 
 
@@ -174,10 +175,10 @@ class SolveRunner:
             current_prg.extend(rule_set)
             print(rule_set)
             ctl = _make_new_control_and_ground(current_prg)
-            symbols_in_heads = list()
+            signatures_of_heads = set()
             for rule in rule_set:
-                symbols_in_heads.extend(symbols_in_heads_map.get(str(rule), set()))
-            self._solvers.append(OneSolveMaker(self, ctl, rule_set, symbols_in_heads))
+                signatures_of_heads.update(symbols_in_heads_map.get(str(rule), set()))
+            self._solvers.append(OneSolveMaker(self, ctl, rule_set, signatures_of_heads))
 
     def generate_ctl_objects_for_rules2(self, program: Program) -> Dict[str, clingo.Control]:
         ctls = {}
@@ -212,7 +213,7 @@ class SolveRunner:
         nodes: List[SolverState] = []
         for node in self._g:
             print(f"{node} at {node.step}")
-            if node.step == step and node.is_still_a_candidate():
+            if node.step == step:# and node.is_still_a_candidate():
                 nodes.append(node)
         return nodes
 

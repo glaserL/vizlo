@@ -5,6 +5,7 @@ from clingo import Control
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from debuggo.transform import transform
 from debuggo.transform.transform import parse_rule_set, DependentAtomsTransformer
 
 
@@ -32,6 +33,17 @@ def test_new_solver():
     g = anotherOne.make_graph()
     assert len(g) == 6
 
+def test_invalidating_previous_assumptions_on_empty_model():
+    prg = "{b}. b:- not b."
+    t = transform.JustTheRulesTransformer()
+    prg = t.transform(prg)
+
+    slv = solver.SolveRunner(prg, symbols_in_heads_map=t.rule2signatures)
+    g = slv.make_graph()
+    nx.draw(g, with_labels=True)
+    plt.show()
+    assert len(g.nodes) == 5
+
 def test_invalidating_previous_assumptions():
     prg = [["a."], ["{b}."], ["b :- not b."]]
     str_prg = "\n".join(["\n".join(x) for x in prg])
@@ -40,9 +52,7 @@ def test_invalidating_previous_assumptions():
 
     slv = solver.SolveRunner(prg, symbols_in_heads_map=dependencies)
     g = slv.make_graph()
-    nx.draw(g, with_labels=True)
-    plt.show()
-    assert len(g.nodes) == 5
+    assert len(g.nodes) == 6
 
 def test_long_distance_branching():
     prg = [["a."], ["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
@@ -54,6 +64,13 @@ def test_long_distance_branching():
     for i, l in enumerate(lengths):
         assert len(nodes[i].model) == l
 
+def test_correctly_detect_unsats():
+    prg = [["{b}."], [":- b."]]
+    slv = solver.SolveRunner(prg)
+    g = slv.make_graph()
+    nx.draw(g, with_labels=True)
+    plt.show()
+    assert len(g.nodes) == 5
 
 def test_simple_recursive():
     prg = [["a."], ["c :- b.", "b :- c, not a."]]

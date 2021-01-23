@@ -87,6 +87,7 @@ class JustTheRulesTransformer(Transformer):
         self._dependency_map = dict()
         self._head_signature2rule = dict()
         self._body_signature2rule = dict()
+        self.rule2signatures = dict()
 
     def visit_Program(self, program):
         pass
@@ -111,6 +112,11 @@ class JustTheRulesTransformer(Transformer):
             tmp = self._body_signature2rule.get(signature, list())
             tmp.append(rule)
             self._body_signature2rule[signature] = tmp
+        tmp = self.rule2signatures.get(str(rule), [])
+        tmp.append(signature)
+        self.rule2signatures[str(rule)] = tmp
+
+
             #
             #
             # hashable_rule = str(rule)
