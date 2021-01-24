@@ -359,4 +359,4 @@ class NetworkxDisplay():
         return igraph.Graph.Adjacency((nx.to_numpy_matrix(nxgraph) > 0).tolist())
 
     def make_rec_label(self, param):
-        return "\n".join(param)
+        return "\n".join([str(e) for e in param])

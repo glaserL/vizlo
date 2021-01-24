@@ -122,9 +122,21 @@ class OneSolveMaker:
         for true in s.model:
             syms.append((true, True))
         for false in s.falses:
-            #if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
-            syms.append((false, False))
+            print(f"Sigs: {self.singatures_in_heads}")
+            if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
+                syms.append((false, False))
         return syms
+
+    def create_ctl_from_partial_model(self, partial_model):
+        ctl = clingo.Control(["0"])
+        ctl.add("base", [], ''.join(self.rule))
+        ctl.ground([("base", [])])
+        with ctl.backend() as backend:
+            for part in partial_model.model:
+                new_atom = backend.add_atom(part)
+                backend.add_rule(new_atom)
+        ctl.cleanup()
+        return ctl
 
 
 def update_falses_in_solver_states(sss):
@@ -163,7 +175,7 @@ class SolveRunner:
     def __init__(self, program: ASTProgram, global_assumptions=None, symbols_in_heads_map=dict()):
         self.EMERGENCY_EXIT_COUNTER = 0
         self.prg: ASTProgram = program
-        print(f"Created AnotherOne with {len(self.prg)} rules.")
+        print(f"Created AnotherOne with {len(self.prg)} rules and {symbols_in_heads_map} sigs.")
         self.global_assumptions = global_assumptions if global_assumptions is not None else set()
         self._g: nx.Graph = nx.DiGraph()
         self._g.add_node(INITIAL_EMPTY_SET)

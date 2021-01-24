@@ -114,9 +114,9 @@ class Debuggo(Control):
         if len(self.painter):
             universe = get_ground_universe(self.program)
             global_assumptions = make_global_assumptions(universe, self.painter)
-            solve_runner = SolveRunner(self.program, global_assumptions)
+            solve_runner = SolveRunner(self.program, global_assumptions, self.transformer.rule2signatures)
         else:
-            solve_runner = SolveRunner(self.program)
+            solve_runner = SolveRunner(self.program, symbols_in_heads_map=self.transformer.rule2signatures)
         # if len(self.painter):
         #     # User decided to print specific models.
         #

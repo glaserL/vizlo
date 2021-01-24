@@ -192,12 +192,14 @@ number(1..3).
 """
     queens = "{a}. {b}. {c}. a :- b. b: - c. c:- a."
     queens = "{a; b}. b :- a."
-    queens = "{a}. b :- a. c :- b."
+    queens = "{a}. {b} :- a. b :- not a."
+    #queens = "{a}. b :- a. c :- not b."
     ctl = Debuggo(["0"])
     # TODO: why do this global stuff if you can just grab them from the control object after grounding directly?
     ctl.add("base", [], queens)
     ctl.ground([("base", [])])
     print("ok??")
+
 
     # interesting_model = set()
     # interesting_model.add(clingo.Function("y", [clingo.Number(5)]))
@@ -208,3 +210,4 @@ number(1..3).
     # interesting_model = PythonModel(interesting_model)
     # ctl.add_to_painter(interesting_model)
     ctl.paint()
+    plt.show()

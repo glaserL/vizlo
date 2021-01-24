@@ -41,8 +41,16 @@ def test_invalidating_previous_assumptions_on_empty_model():
     slv = solver.SolveRunner(prg, symbols_in_heads_map=t.rule2signatures)
     g = slv.make_graph()
     nx.draw(g, with_labels=True)
-    plt.show()
     assert len(g.nodes) == 5
+
+def test_some_other_prg():
+    prg = "{a; b}. b :- a."
+    t = transform.JustTheRulesTransformer()
+    prg = t.transform(prg)
+
+    slv = solver.SolveRunner(prg, symbols_in_heads_map=t.rule2signatures)
+    g = slv.make_graph()
+    assert len(g) == 9
 
 def test_invalidating_previous_assumptions():
     prg = [["a."], ["{b}."], ["b :- not b."]]
@@ -69,7 +77,7 @@ def test_correctly_detect_unsats():
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
     nx.draw(g, with_labels=True)
-    plt.show()
+
     assert len(g.nodes) == 5
 
 def test_simple_recursive():

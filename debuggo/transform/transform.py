@@ -4,6 +4,7 @@ import clingo, heapq
 import networkx as nx
 from clingo import ast
 from typing import List, Dict, Tuple
+import matplotlib.pyplot as plt
 
 RuleSet = List[str]
 Program = List[RuleSet]
@@ -108,13 +109,15 @@ class JustTheRulesTransformer(Transformer):
             tmp = self._head_signature2rule.get(signature, list())
             tmp.append(rule)
             self._head_signature2rule[signature] = tmp
+
+            tmp = self.rule2signatures.get(str(rule), [])
+            tmp.append(signature)
+            self.rule2signatures[str(rule)] = tmp
         if pos=="body":
             tmp = self._body_signature2rule.get(signature, list())
             tmp.append(rule)
             self._body_signature2rule[signature] = tmp
-        tmp = self.rule2signatures.get(str(rule), [])
-        tmp.append(signature)
-        self.rule2signatures[str(rule)] = tmp
+
 
 
             #
@@ -164,6 +167,7 @@ class JustTheRulesTransformer(Transformer):
         deps = make_dependency_graph(parse, self._head_signature2rule, self._body_signature2rule)
         deps = merge_cycles(deps)
         deps = remove_eigenkanten(deps)
+        self._deps = deps  # for debugging purposes
         program = list(nx.topological_sort(deps))
         return program
 
@@ -182,6 +186,12 @@ def make_dependency_graph(rules: List[clingo.ast.Rule],
     heads must come before r.
     """
     g = nx.DiGraph()
+    # first, all rules with containing the same signature in their heads are dependent of each other
+    for _, rules_with_head in head_dependencies.items():
+        for x in rules_with_head:
+            for y in rules_with_head:
+                g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
+
     for head_signature, rules_with_head in head_dependencies.items():
         dependent_rules = body_dependencies.get(head_signature, [])
         for parent_rule in rules_with_head:
@@ -247,10 +257,11 @@ def merge_nodes(nodes):
 
 def merge_cycles(g: nx.Graph) -> nx.Graph:
     mapping = {}
-    for cycle in nx.algorithms.cycles.simple_cycles(g):
+    for cycle in nx.algorithms.components.strongly_connected_components(g):
+        print(f"Cycle: {cycle}")
         merge_node = merge_nodes(cycle)
         mapping.update({old_node: merge_node for old_node in cycle})
-
+    print(mapping)
     return nx.relabel_nodes(g, mapping)
 
 

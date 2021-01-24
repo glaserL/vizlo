@@ -39,11 +39,10 @@ def test_single_circle_within_already_sorted():
     prg = "a. b :- a. c :- b. b:-c. d :- b."
     t = transform.JustTheRulesTransformer()
     sorted_program = t.transform(prg)
-    assert len(sorted_program) == 4
+    assert len(sorted_program) == 3
     assert is_str_list_and_ast_list_identical(sorted_program[0], ["a."])
-    assert is_str_list_and_ast_list_identical(sorted_program[1], ["b :- a."])
-    assert is_str_list_and_ast_list_identical(sorted_program[2], ["c :- b.", "b :- c."])
-    assert is_str_list_and_ast_list_identical(sorted_program[3], ["d :- b."])
+    assert is_str_list_and_ast_list_identical(sorted_program[1], ["b :- c.", "c :- b.","b :- a."])
+    assert is_str_list_and_ast_list_identical(sorted_program[2], ["d :- b."])
 
 
 def test_sort_single():
@@ -84,13 +83,11 @@ def test_return_type_is_AST():
 def test_dependent_choice_rule():
     prg = "{a}. {b} :- a. b :- a."
     t = transform.JustTheRulesTransformer()
-    split = t._split_program_into_rules(prg)
-
-    g = make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
-    nx.draw(g,with_labels=True)
+    _ = t.transform(prg)
+    g = t._deps
+    nx.draw(g, with_labels=True)
     plt.show()
-    assert len(g) == 3
-    assert len(g.edges) == 2
+    assert len(g) == 1
 
 def test_formula_in_rule():
     prg = "x(X) :- y(X), X != 2. y(1..5)."
@@ -148,8 +145,6 @@ def test_transformation_with_choice_on_variables():
     t = transform.JustTheRulesTransformer()
     sorted = t.transform(prg)
     g = make_dependency_graph(sorted, t._head_signature2rule,t._body_signature2rule)
-    nx.draw(g, with_labels=True)
-    plt.show()
     assert len(g) == 2
     assert len(sorted) == 2
 
@@ -161,6 +156,10 @@ def test_transform_choice_in_beginning():
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
     assert is_str_list_and_ast_list_identical(sorted[2], ["c :- b."])
 
+def test_group_based_on_heads():
+    prg = "{a; b}. a :- b."
+    transformed = transform.transform(prg)
+    assert len(transformed) == 1
 
 def test_transform_without_instanciation():
     prg = "b :- a. a."
