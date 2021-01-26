@@ -170,9 +170,3 @@ def test_transform_without_instanciation():
     assert len(sorted)
     assert is_str_list_and_ast_list_identical(sorted[0], ["a."])
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
-
-def test_dependency_transformation():
-    prg = "x(1..10). {y(X)} :- x(X). {a;b;c;d;e} :- x(10). next(x(X), x(Y)) :- x(X), x(Y), X>Y. "
-    t = transform.DependentAtomsTransformer()
-    _ = t.make(prg)
-    assert len(t.dependency_map) > 0
