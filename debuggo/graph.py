@@ -1,5 +1,4 @@
 import math
-import os
 import sys
 from copy import copy
 from typing import Tuple
@@ -9,8 +8,7 @@ from collections import defaultdict
 import igraph
 import networkx as nx
 
-from debuggo.display.util import draw_nodes
-from debuggo.solve.solver import INITIAL_EMPTY_SET
+from debuggo.solver import INITIAL_EMPTY_SET
 
 EDGE_ALPHA = 0.3
 

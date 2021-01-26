@@ -1,15 +1,9 @@
 
 import sys
-from debuggo.solve.solver import SolveRunner
+from debuggo.solver import SolveRunner
 import networkx as nx
-from debuggo.display.graph import GraphVisualizer
-from PySide2.QtCore import Qt, Slot
-from PySide2.QtGui import QPainter
-from PySide2.QtWidgets import (QAction, QApplication, QHeaderView, QHBoxLayout, QLabel, QLineEdit,
-                               QMainWindow, QPushButton, QTableWidget, QTableWidgetItem,
-                               QVBoxLayout, QWidget,QDesktopWidget)
+from PySide2.QtWidgets import (QApplication, QHeaderView, QMainWindow, QPushButton, QWidget, QDesktopWidget)
 from PySide2.QtCharts import QtCharts
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib as mpl
 

@@ -1,5 +1,6 @@
-from debuggo.solve import solver
-from debuggo.display import graph
+from debuggo import solver, graph
+
+
 def main():
 
     stable_models = [["d"], ["d", "c"], ["d", "c", "b"], ["d", "c", "b", "a"]]

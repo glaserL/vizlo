@@ -1,10 +1,9 @@
 import clingo
 import networkx as nx
 import matplotlib.pyplot as plt
-import pytest
 
-from debuggo.transform import transform
-from debuggo.transform.transform import make_dependency_graph
+from debuggo import transform
+from debuggo.transform import make_dependency_graph
 
 
 def are_two_lists_identical(a, b):

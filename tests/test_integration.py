@@ -1,16 +1,13 @@
-import sys
 import time
 
 import clingo
 import networkx as nx
 import pytest
 
-from debuggo.solve import solver
-from debuggo.display import graph
+from debuggo import solver, graph
 from debuggo.main import Debuggo, PythonModel
-import matplotlib.pyplot as plt
 
-from debuggo.solve.solver import SolveRunner
+from debuggo.solver import SolveRunner
 
 
 def test_clingo_ast_rules_are_passed_around():

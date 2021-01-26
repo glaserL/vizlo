@@ -1,10 +1,7 @@
-import sys
-
-import clingo
-from clingo import Control, Symbol, StatisticsMap, Model, SolveHandle, SolveResult
-from debuggo.transform.transform import JustTheRulesTransformer
-from debuggo.display.graph import NetworkxDisplay, assert_no_bi_edges
-from debuggo.solve.solver import SolveRunner, SolveRunner, INITIAL_EMPTY_SET
+from clingo import Control, Symbol, Model, SolveHandle, SolveResult
+from debuggo.transform import JustTheRulesTransformer
+from debuggo.graph import NetworkxDisplay
+from debuggo.solver import SolveRunner, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection
 import matplotlib.pyplot as plt
 import networkx as nx

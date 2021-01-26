@@ -1,5 +1,5 @@
 from typing import List
 
-from debuggo.solve.solver import SolverState
+from debuggo.solver import SolverState
 
 SolvingHistory = List[SolverState]

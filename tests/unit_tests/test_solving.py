@@ -1,12 +1,8 @@
 import pytest
 
-from debuggo.solve import solver
+from debuggo import solver, transform
 from clingo import Control
-import matplotlib.pyplot as plt
 import networkx as nx
-
-from debuggo.transform import transform
-from debuggo.transform.transform import parse_rule_set, DependentAtomsTransformer
 
 
 def get_transformed_test_program():
