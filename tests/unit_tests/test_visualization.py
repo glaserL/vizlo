@@ -11,20 +11,38 @@ import igraph
 
 def create_simple_diGraph():
     graph = nx.DiGraph()
-    a = SolverState({"a"," b"," c"," d"}, 0)
+    a = SolverState({"a", " b", " c", " d"}, 0)
     b = SolverState({"b"}, 1)
     graph.add_edge(a, b, rule="rule")
     return graph
+
+
+def create_diGraph_with_mergable_nodes():
+    g = nx.DiGraph()
+    empty = SolverState(set(), 0)
+    b = SolverState({"a", "b"}, 1)
+    c = SolverState({"a"}, 1)
+    d = SolverState(set(), 1)
+    e = SolverState({"a", "b"}, 2)
+    f = SolverState({"a", "b"}, 2)
+    h = SolverState(set(), 2)
+    g.add_edge(empty, b, rule="{a ; b}.")
+    g.add_edge(empty, c, rule="{a ; b}.")
+    g.add_edge(empty, d, rule="{a ; b}.")
+    g.add_edge(b, e, rule="b :- a.")
+    g.add_edge(c, f, rule="b :- a.")
+    g.add_edge(d, h, rule="b :- a.")
+    return g
 
 
 def create_diGraph_with_single_branch():
     g = nx.DiGraph()
     empty = SolverState(set(), 0)
     a = SolverState({"a"}, 1)
-    b = SolverState({"a","b"}, 2)
+    b = SolverState({"a", "b"}, 2)
     c = SolverState({"a"}, 2)
     d = SolverState({"a"}, 3)
-    e = SolverState({"a","b","c"}, 3)
+    e = SolverState({"a", "b", "c"}, 3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
@@ -53,11 +71,11 @@ def create_diGraph_with_multiple_branchoffs():
     g = nx.DiGraph()
     empty = SolverState(set(), 0)
     a = SolverState({"a"}, 1)
-    b = SolverState({"a","b"}, 2)
+    b = SolverState({"a", "b"}, 2)
     c = SolverState({"a"}, 2)
     d = SolverState({"a"}, 3)
-    e = SolverState({"a","b","c"}, 3)
-    f = SolverState({"a","b","d"}, 3)
+    e = SolverState({"a", "b", "c"}, 3)
+    f = SolverState({"a", "b", "d"}, 3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
@@ -72,9 +90,9 @@ def create_diGraph_not_a_tree():
     g = nx.DiGraph()
     empty = SolverState(set(), 0)
     a = SolverState({"a"}, 1)
-    b = SolverState({"a","b"}, 2)
+    b = SolverState({"a", "b"}, 2)
     c = SolverState({"a"}, 2)
-    d = SolverState({"a","b"}, 3)
+    d = SolverState({"a", "b"}, 3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
@@ -82,6 +100,12 @@ def create_diGraph_not_a_tree():
     g.add_edge(c, d, rule="a :- b.")
     g.nodes(data=True)
     return g, empty
+
+
+def test_merge_nodes():
+    g = create_diGraph_with_mergable_nodes()
+    display = NetworkxDisplay(g, merge_nodes=False)
+    assert len(display._ng) == 6, "display should merge nodes with identical sets on the same step."
 
 def test_bfs():
     g, empty = create_diGraph_with_single_branch()
@@ -93,6 +117,7 @@ def test_returns_printable_array():
     display = NetworkxDisplay(g)
     pic = display.draw()
     assert isinstance(pic, np.ndarray)
+
 
 def test_branching_graph():
     g, empty = create_diGraph_with_single_branch()
@@ -110,6 +135,7 @@ def test_nx_viz_multiple_branches():
     g, _ = create_diGraph_with_multiple_branchoffs()
     display = NetworkxDisplay(g)
     display.draw()
+
 
 def test_nx_viz_converges_again():
     g, _ = create_diGraph_not_a_tree()

@@ -139,11 +139,22 @@ def adjust_figure_size(pos, node_labels):
 
 class NetworkxDisplay():
 
-    def __init__(self, graph, print_changes_only=True):
-        self._ng = graph
+    def __init__(self, graph, print_changes_only=True, merge_nodes=True):
+        if merge_nodes:
+            self._ng = self.merge_nodes_on_same_step(graph)
+        else:
+            self._ng = graph
         self._print_changes_only = print_changes_only
         self._ig: igraph.Graph = self.nxgraph_to_igraph(self._ng)
         print(f"Initialized {self.__class__}")
+
+    def merge_nodes_on_same_step(self, g):
+        mapping = {}
+        for x in g.nodes():
+            for y in g.nodes():
+                if x.step == y.step and x.model == y.model:
+                    mapping[x] = y
+        return nx.relabel_nodes(g, mapping)
 
     def draw_rule_labels(self, G, pos,
                          edge_labels=None,
