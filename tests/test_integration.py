@@ -5,11 +5,11 @@ import numpy as np
 import networkx as nx
 import pytest
 
-from debuggo import solver, graph
-from debuggo.main import Debuggo, PythonModel
+from vizlo import solver, graph
+from vizlo.main import Debuggo, PythonModel
 import matplotlib.pyplot as plt
 
-from debuggo.solver import SolveRunner
+from vizlo.solver import SolveRunner
 
 
 def test_clingo_ast_rules_are_passed_around():

@@ -8,7 +8,7 @@ from collections import defaultdict
 import igraph
 import networkx as nx
 
-from debuggo.solver import INITIAL_EMPTY_SET
+from vizlo.solver import INITIAL_EMPTY_SET
 
 EDGE_ALPHA = 0.3
 

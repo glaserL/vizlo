@@ -1,6 +1,6 @@
 import pytest
 
-from debuggo import solver, transform
+from vizlo import solver, transform
 from clingo import Control
 import networkx as nx
 

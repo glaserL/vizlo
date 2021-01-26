@@ -2,8 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-from debuggo.solver import SolverState, annotate_edges_in_nodes
-from debuggo.graph import NetworkxDisplay, get_width_and_height_of_text_label
+from vizlo.solver import SolverState
+from vizlo.graph import NetworkxDisplay, get_width_and_height_of_text_label
 
 
 def create_simple_diGraph():

@@ -1,7 +1,7 @@
 from clingo import Control, Symbol, Model, SolveHandle, SolveResult
-from debuggo.transform import JustTheRulesTransformer
-from debuggo.graph import NetworkxDisplay
-from debuggo.solver import SolveRunner, INITIAL_EMPTY_SET
+from vizlo.transform import JustTheRulesTransformer
+from vizlo.graph import NetworkxDisplay
+from vizlo.solver import SolveRunner, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection
 import matplotlib.pyplot as plt
 import networkx as nx

@@ -2,8 +2,8 @@ import clingo
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from debuggo import transform
-from debuggo.transform import make_dependency_graph
+from vizlo import transform
+from vizlo.transform import make_dependency_graph
 
 
 def are_two_lists_identical(a, b):
