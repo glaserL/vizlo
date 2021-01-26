@@ -104,11 +104,6 @@ def test_merge_nodes():
     display = NetworkxDisplay(g)
     assert len(display._ng) == 6, "display should merge nodes with identical sets on the same step."
 
-def test_bfs():
-    g, empty = create_diGraph_with_single_branch()
-    annotate_edges_in_nodes(g, empty)
-
-
 def test_returns_printable_array():
     g = create_simple_diGraph()
     display = NetworkxDisplay(g)
