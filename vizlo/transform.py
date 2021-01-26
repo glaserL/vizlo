@@ -6,10 +6,8 @@ from clingo import ast
 from typing import List, Dict, Tuple
 import matplotlib.pyplot as plt
 
-RuleSet = List[str]
-Program = List[RuleSet]
-ASTRuleSet = List[clingo.ast.AST]
-ASTProgram = List[ASTRuleSet]
+from vizlo.types import ASTRuleSet, ASTProgram, Program, RuleSet
+
 
 def make_signature(function: clingo.ast.Function):
     return function.name, len(function.arguments)

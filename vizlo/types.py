@@ -1,5 +1,9 @@
 from typing import List
 
-from vizlo.solver import SolverState
+import clingo
 
-SolvingHistory = List[SolverState]
+RuleSet = List[str]
+Program = List[RuleSet]
+ASTRuleSet = List[clingo.ast.AST]
+FlatASTProgram = ASTRuleSet
+ASTProgram = List[ASTRuleSet]

@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 # Types
-# TODO: can you add them to a single file and import them from child folders?
-RuleSet = List[str]
-Program = List[RuleSet]
+from vizlo.types import Program
 
 
 def program_to_string(program: Program) -> str:

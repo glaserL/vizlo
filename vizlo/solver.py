@@ -1,19 +1,13 @@
-import sys
-from copy import copy
-from typing import List, Dict, Set, Union
+from typing import List, Set, Union
 
 import clingo
 import networkx as nx
-import logging
 
 from clingo import Control, Symbol
 
+from vizlo.types import ASTRuleSet, FlatASTProgram, ASTProgram
+
 EMERGENCY_EXIT_COUNTER = 0
-RuleSet = List[str]
-Program = List[RuleSet]
-ASTRuleSet = List[clingo.ast.AST]
-FlatASTProgram = ASTRuleSet
-ASTProgram = List[ASTRuleSet]
 
 
 def get_all_trues_from_assumption(assumptions) -> Set[Symbol]:
