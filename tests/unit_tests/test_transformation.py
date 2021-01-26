@@ -87,7 +87,7 @@ def test_dependent_choice_rule():
     g = t._deps
     nx.draw(g, with_labels=True)
     plt.show()
-    assert len(g) == 1
+    assert len(g) == 2
 
 def test_formula_in_rule():
     prg = "x(X) :- y(X), X != 2. y(1..5)."
@@ -102,7 +102,7 @@ def test_creation_of_dependency_maps_during_transformation():
     prg = "{a;f;g}. {b} :- a. b :- a."
     t = transform.JustTheRulesTransformer()
     sort = t.transform(prg)
-    assert len(sort) == 3
+    assert len(sort) == 2, "Transformation should recognize two rulesets"
     heads = t._head_signature2rule
     bodies = t._body_signature2rule
     assert len(heads) == 4

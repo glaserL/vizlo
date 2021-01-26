@@ -104,7 +104,7 @@ def create_diGraph_not_a_tree():
 
 def test_merge_nodes():
     g = create_diGraph_with_mergable_nodes()
-    display = NetworkxDisplay(g, merge_nodes=False)
+    display = NetworkxDisplay(g)
     assert len(display._ng) == 6, "display should merge nodes with identical sets on the same step."
 
 def test_bfs():
@@ -113,7 +113,7 @@ def test_bfs():
 
 
 def test_returns_printable_array():
-    g, empty = create_simple_diGraph()
+    g = create_simple_diGraph()
     display = NetworkxDisplay(g)
     pic = display.draw()
     assert isinstance(pic, np.ndarray)
@@ -147,11 +147,6 @@ def test_default_nx_viz():
     g, _ = create_diGraph_with_multiple_branchoffs()
     nx.draw_random(g, with_labels=True)
 
-
-def test_recursive_viz():
-    g, _ = create_recursive_diGraph()
-    NetworkxDisplay._inject_for_drawing(g)
-    nx.multipartite_layout(g, "step")
 
 
 def get_column_positions(pos, rule_mapping):

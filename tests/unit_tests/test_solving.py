@@ -33,34 +33,21 @@ def test_new_solver():
     g = anotherOne.make_graph()
     assert len(g) == 6
 
-def test_invalidating_previous_assumptions_on_empty_model():
-    prg = "{b}. b:- not b."
-    t = transform.JustTheRulesTransformer()
-    prg = t.transform(prg)
 
-    slv = solver.SolveRunner(prg, symbols_in_heads_map=t.rule2signatures)
-    g = slv.make_graph()
-    nx.draw(g, with_labels=True)
-    assert len(g.nodes) == 5
-
-def test_some_other_prg():
+def test_multiple_atom_definitions():
     prg = "{a; b}. b :- a."
     t = transform.JustTheRulesTransformer()
     prg = t.transform(prg)
 
     slv = solver.SolveRunner(prg, symbols_in_heads_map=t.rule2signatures)
     g = slv.make_graph()
-    assert len(g) == 9
+    nodes = list(g.nodes())
+    assert len(nodes) == 4
+    assert len(nodes[0].model) == 0
+    assert len(nodes[1].model) == 0
+    assert len(nodes[2].model) == 1
+    assert len(nodes[3].model) == 2
 
-def test_invalidating_previous_assumptions():
-    prg = [["a."], ["{b}."], ["b :- not b."]]
-    str_prg = "\n".join(["\n".join(x) for x in prg])
-    prg = [parse_rule_set(rule) for rule in prg]
-    dependencies = DependentAtomsTransformer().make(str_prg)
-
-    slv = solver.SolveRunner(prg, symbols_in_heads_map=dependencies)
-    g = slv.make_graph()
-    assert len(g.nodes) == 6
 
 def test_long_distance_branching():
     prg = [["a."], ["{b} :- a."], ["c :- b."], ["{d} :- b."], ["e :- not d."]]
@@ -91,8 +78,13 @@ def test_recursive_with_choice_before():
     prg = [["{a}."], ["c :- a.", "b :- c. c :- b."]]
     slv = solver.SolveRunner(prg)
     g = slv.make_graph()
+    nodes = list(g.nodes())
+    assert len(nodes[0].model) == 0
+    assert len(nodes[1].model) == 0
+    assert len(nodes[2].model) == 1
+    assert len(nodes[3].model) == 0
+    assert len(nodes[4].model) == 3
 
-    assert len(g) == 4
 
 
 def test_recursive_with_choice_within():

@@ -201,13 +201,5 @@ number(1..3).
     print("ok??")
 
 
-    # interesting_model = set()
-    # interesting_model.add(clingo.Function("y", [clingo.Number(5)]))
-    # interesting_model.add(clingo.Function("y", [clingo.Number(3)]))
-    # for x in range(6):
-    #     interesting_model.add(clingo.Function("x", [clingo.Number(x)]))
-    #
-    # interesting_model = PythonModel(interesting_model)
-    # ctl.add_to_painter(interesting_model)
-    ctl.paint()
-    plt.show()
+def test_calling_paint_should_return_a_plottable_figure():
+    pass
