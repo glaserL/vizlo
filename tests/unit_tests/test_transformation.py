@@ -84,8 +84,6 @@ def test_dependent_choice_rule():
     t = transform.JustTheRulesTransformer()
     _ = t.transform(prg)
     g = t._deps
-    nx.draw(g, with_labels=True)
-    plt.show()
     assert len(g) == 2
 
 def test_formula_in_rule():

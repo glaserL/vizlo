@@ -16,18 +16,21 @@ def program_to_string(program: Program) -> str:
         prg += "\n".join([str(rule) for rule in ruleSet])
     return prg
 
+
 class PythonModel():
     """"Lazy model that allows us to store stuff from a clingo model in python"""
-    def __init__(self, model : Union[Model, Set[Symbol]]):
+
+    def __init__(self, model: Union[Model, Set[Symbol]]):
         if isinstance(model, Model):
-            self.model : Set[Symbol] = model.symbols(atoms=True)
+            self.model: Set[Symbol] = model.symbols(atoms=True)
         else:
             self.model = model
 
     def __iter__(self):
         return iter(self.model)
 
-def get_ground_universe(program : Program) -> Set[Symbol]:
+
+def get_ground_universe(program: Program) -> Set[Symbol]:
     prg = program_to_string(program)
     ctl = Control()
     ctl.add("base", [], prg)
@@ -36,11 +39,13 @@ def get_ground_universe(program : Program) -> Set[Symbol]:
     print(f"Ground universe: {ground_universe}")
     return ground_universe
 
-def extract_ground_universe_from_control(ctl : Control) -> Set[Symbol]:
+
+def extract_ground_universe_from_control(ctl: Control) -> Set[Symbol]:
     return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
 
-def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
-    true_symbols : Set[Symbol] = set()
+
+def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
+    true_symbols: Set[Symbol] = set()
     for model in models:
         true_symbols.update(model.model)
     print(f"Global truths: {true_symbols}")
@@ -48,18 +53,20 @@ def make_global_assumptions(universe : Set[Symbol], models : Collection[PythonMo
     print(f"Global assumptions: {global_assumptions}")
     return global_assumptions
 
+
 class Debuggo(Control):
 
     def add_to_painter(self, model: Union[Model, PythonModel]):
         self.painter.append(PythonModel(model))
 
-
-    def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20):
+    def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20, print_entire_models=False,
+                 atom_draw_maximum=15):
         self.control = Control(arguments, logger, message_limit)
-        self.painter : List[PythonModel] = list()
-        self.program : Program = list()
+        self.painter: List[PythonModel] = list()
+        self.program: Program = list()
         self.transformer = JustTheRulesTransformer()
-        self._print_changes_only = True
+        self._print_changes_only = not print_entire_models
+        self._atom_draw_maximum = atom_draw_maximum
 
     def _set_print_only_changes(self, value: bool) -> None:
         self._print_changes_only = value
@@ -86,7 +93,7 @@ class Debuggo(Control):
         for model in stable_models:
             for node in g.nodes():
                 print(f"{node} {type(node.model)} == {model} {type(model)} -> {set(node.model) == model}")
-                if set(node.model) == model and len(g.edges(node)) == 0: # This is a leaf
+                if set(node.model) == model and len(g.edges(node)) == 0:  # This is a leaf
                     print(f"{node} <-> {model}")
                     correspoding_nodes.add(node)
                     break
@@ -103,7 +110,7 @@ class Debuggo(Control):
         irrelevant_nodes = all_nodes - relevant_nodes
         graph.remove_nodes_from(irrelevant_nodes)
         after = len(graph)
-        print(f"Removed {before-after} of {before} nodes ({(before-after)/before})")
+        print(f"Removed {before - after} of {before} nodes ({(before - after) / before})")
 
     def make_graph(self):
         if len(self.painter):
@@ -120,9 +127,10 @@ class Debuggo(Control):
         # # we simply print all
         g = solve_runner.make_graph()
         return g
-    def paint(self):
+
+    def paint(self, atom_draw_maximum=20, print_entire_models=False):
         g = self.make_graph()
-        display = NetworkxDisplay(g)
+        display = NetworkxDisplay(g,atom_draw_maximum, not print_entire_models)
         img = display.draw()
         return img
 

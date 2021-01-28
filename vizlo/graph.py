@@ -8,7 +8,7 @@ from collections import defaultdict
 import igraph
 import networkx as nx
 
-from vizlo.solver import INITIAL_EMPTY_SET
+from vizlo.solver import INITIAL_EMPTY_SET, SolverState
 
 EDGE_ALPHA = 0.3
 
@@ -82,22 +82,6 @@ def assert_no_bi_edges(g: nx.Graph):
     assert len(g.nodes) == len(g.edges) - 1
 
 
-def model_to_string(model):
-    if not len(model):
-        return "\u2205"
-    result_str = ""
-    how_many_per_line = math.sqrt(len(model))
-    tmp = []
-    for m in model:
-        print(f"Consuming {str(m)}, current_state = {tmp}")
-        if len(tmp) >= how_many_per_line:
-            result_str += " ".join(tmp) + "\n"
-            tmp.clear()
-        tmp.append(str(m))
-    result_str += " ".join(tmp)
-    return f"{result_str}"
-
-
 def get_width_and_height_of_text_label(text_label):
     t = mpl.textpath.TextPath((0, 0), text_label, size=8)
     bb = t.get_extents()
@@ -106,12 +90,6 @@ def get_width_and_height_of_text_label(text_label):
     return width, height
 
 
-def make_node_labels(g):
-    node2label = {}
-    for node in g:
-        label = model_to_string(node.model)
-        node2label[node] = label
-    return node2label
 
 
 def adjust_figure_size(pos, node_labels):
@@ -137,14 +115,36 @@ def adjust_figure_size(pos, node_labels):
 
 class NetworkxDisplay():
 
-    def __init__(self, graph, print_changes_only=True, merge_nodes=True):
+    def __init__(self, graph,atom_draw_maximum=20,print_changes_only=True, merge_nodes=True):
         if merge_nodes:
             self._ng = self.merge_nodes_on_same_step(graph)
         else:
             self._ng = graph
+        self.atom_draw_maximum = atom_draw_maximum
         self._print_changes_only = print_changes_only
+        self.max_depth = max(n.step for n in self._ng.nodes())
         self._ig: igraph.Graph = self.nxgraph_to_igraph(self._ng)
         print(f"Initialized {self.__class__}")
+
+    def model_to_string(self, model):
+        if self.atom_draw_maximum <= 0:
+            return ""
+        if not len(model):
+            return "\u2205"
+        result_str = ""
+        how_many_per_line = math.sqrt(len(model))
+        tmp = []
+        for m in list(model)[:min(len(model), self.atom_draw_maximum)]:
+            if len(tmp) >= how_many_per_line:
+                result_str += " ".join(tmp) + "\n"
+                tmp.clear()
+            tmp.append(str(m))
+        result_str += " ".join(tmp)
+        return f"{result_str}"
+
+    def solver_state_to_string(self, solver_state: SolverState) -> str:
+        atoms_to_draw = solver_state.adds if self._print_changes_only and self.max_depth != solver_state.step else solver_state.model
+        return self.model_to_string(atoms_to_draw)
 
     def merge_nodes_on_same_step(self, g):
         mapping = {}
@@ -154,6 +154,12 @@ class NetworkxDisplay():
                     mapping[x] = y
         return nx.relabel_nodes(g, mapping)
 
+    def make_node_labels(self, g):
+        node2label = {}
+        for node in g:
+            label = self.solver_state_to_string(node)
+            node2label[node] = label
+        return node2label
     def draw_rule_labels(self, G, pos,
                          edge_labels=None,
                          label_pos=0.5,
@@ -261,11 +267,11 @@ class NetworkxDisplay():
         node_size, pos = self.make_node_positions()
 
         # {node : label}
-        node_labels = make_node_labels(self._ng)
+        node_labels = self.make_node_labels(self._ng)
         print(node_labels)
         #nodes = self.make_nodes_around_node_labels(node_labels)
 
-        figsize = adjust_figure_size(pos, node_labels)
+        #figsize = adjust_figure_size(pos, node_labels)
         figsize = (4, 5)
         sys.stderr.write(str(figsize))
         plt.figure(figsize=figsize)
@@ -341,9 +347,9 @@ class NetworkxDisplay():
         recursive_labels = {}
         for node, nbrsdict in self._ng.adjacency():
             if node.is_still_active:
-                node_labels[node] = model_to_string(node.model)
+                node_labels[node] = self.solver_state_to_string(node)
             else:
-                constraint_labels[node] = model_to_string(node.model)
+                constraint_labels[node] = self.solver_state_to_string(node)
             for neighbor, edge_attrs in nbrsdict.items():
                 if str(edge_attrs["rule"]).count(":-") > 1:
                     rec_label = self.make_rec_label(edge_attrs['rule'])

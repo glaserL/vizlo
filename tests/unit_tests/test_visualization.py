@@ -34,12 +34,12 @@ def create_diGraph_with_mergable_nodes():
 
 def create_diGraph_with_single_branch():
     g = nx.DiGraph()
-    empty = SolverState(set(), True, 0)
-    a = SolverState({"a"}, True, 1)
-    b = SolverState({"a", "b"},True,  2)
-    c = SolverState({"a"},True,  2)
-    d = SolverState({"a"},True,  3)
-    e = SolverState({"a", "b", "c"},True,  3)
+    empty = SolverState(set(), True, 0, adds=set())
+    a = SolverState({"a"}, True, 1, adds={"a"})
+    b = SolverState({"a", "b"},True,  2, adds={"b"})
+    c = SolverState({"a"},True,  2, adds=set())
+    d = SolverState({"a"},True,  3, adds=set())
+    e = SolverState({"a", "b", "c"},True,  3, adds={"c"})
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
@@ -47,6 +47,15 @@ def create_diGraph_with_single_branch():
     g.add_edge(c, d, rule="c :- b.")
     return g
 
+def create_branching_diGraph_with_unsat():
+    g = create_diGraph_with_single_branch()
+    d = SolverState({"a"},True,  3, adds = set())
+    e = SolverState({"a", "b", "c"},True,  3, adds={"c"})
+    sat = SolverState({"a"}, True, 4, adds=set())
+    unsat = SolverState(set(), False, 4, adds=set())
+    g.add_edge(d, sat, rule=":- c.")
+    g.add_edge(e, unsat, rule=":- c.")
+    return g
 
 def create_recursive_diGraph():
     g = nx.DiGraph()
@@ -97,19 +106,11 @@ def create_diGraph_not_a_tree():
     g.nodes(data=True)
     return g, empty
 
-def create_branching_diGraph_with_unsat():
-    g = create_diGraph_with_single_branch()
-    d = SolverState({"a"},True,  3)
-    e = SolverState({"a", "b", "c"},True,  3)
-    sat = SolverState({"a"}, True, 4)
-    unsat = SolverState(set(), False, 4)
-    g.add_edge(d, sat, rule=":- c.")
-    g.add_edge(e, unsat, rule=":- c.")
-    return g
 
 def test_drawing_unsat_and_empty_look_different():
     g = create_branching_diGraph_with_unsat()
-    display = NetworkxDisplay(g)
+    assert len(g) == 10
+    display = NetworkxDisplay(g, False)
     constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
     assert len(constraint_labels) == 1
     assert list(constraint_labels.keys())[0] == SolverState(set(), False, 4)
@@ -121,39 +122,38 @@ def test_drawing_unsat_and_empty_look_different():
 
 def test_merge_nodes():
     g = create_diGraph_with_mergable_nodes()
-    display = NetworkxDisplay(g)
+    display = NetworkxDisplay(g, False)
     assert len(display._ng) == 6, "display should merge nodes with identical sets on the same step."
 
 
 def test_returns_printable_array():
     g = create_simple_diGraph()
-    display = NetworkxDisplay(g)
+    display = NetworkxDisplay(g, False)
     pic = display.draw()
-    assert isinstance(pic, np.ndarray)
+    assert isinstance(pic, np.ndarray), "draw() should return a plt.show()able object."
 
 
 def test_branching_graph():
     g = create_diGraph_with_single_branch()
-    display = NetworkxDisplay(g)
+    display = NetworkxDisplay(g, False)
     pic = display.draw()
-    plt.show()
 
 
 def test_nx_viz():
-    g, empty = create_diGraph_with_single_branch()
-    display = NetworkxDisplay(g)
+    g = create_diGraph_with_single_branch()
+    display = NetworkxDisplay(g, False)
     display.draw()
 
 
 def test_nx_viz_multiple_branches():
     g, _ = create_diGraph_with_multiple_branchoffs()
-    display = NetworkxDisplay(g)
+    display = NetworkxDisplay(g, False)
     display.draw()
 
 
 def test_nx_viz_converges_again():
     g, _ = create_diGraph_not_a_tree()
-    display = NetworkxDisplay(g)
+    display = NetworkxDisplay(g, False)
     display.draw()
 
 # Requirement: a recursive subprogram requires to have a CIRCLE
@@ -176,8 +176,8 @@ def test_test():
 
     pos = nx.multipartite_layout(g, "rule")
     print(f"???{pos}")
-    plt.clf()
-    nx.draw(g, pos, with_labels=True)
+#    plt.clf()
+#    nx.draw(g, pos, with_labels=True)
 
 
 def test_get_viz_size():
@@ -185,3 +185,41 @@ def test_get_viz_size():
     assert width > 0
     assert height > 0
     assert width > height
+
+def test_only_new_models_are_shown():
+    g = create_branching_diGraph_with_unsat()
+    display = NetworkxDisplay(g)
+    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+
+    for node, label in node_labels.items():
+        label = set() if label == "\u2205" else set(label.split())
+        if node.step != 4:
+            assert node.adds == label, "inner nodes should only represent partial models."
+        else:
+            assert node.model == label, "The last node should represent the stable model."
+
+    display = NetworkxDisplay(g, print_changes_only=False)
+    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+
+    for node, label in node_labels.items():
+        label = set() if label == "\u2205" else set(label.split())
+        assert node.model == label, "inner nodes should only represent partial models."
+
+def test_print_empty_graph():
+    pass
+
+def test_max_model_size_parameter():
+    for maximum in [0, 1, 5, 20, 25]:
+        g = nx.DiGraph()
+        a = SolverState(set(str(x) for x in range(40)), 0, True)
+        b = SolverState(set(str(x) for x in range(40)), 1, True)
+        g.add_edge(a, b, rule="Wow")
+        display = NetworkxDisplay(g, atom_draw_maximum=maximum, print_changes_only=False)
+        display.draw()
+        constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+        print(node_labels)
+        print(constraint_labels)
+        print(edge_labels)
+        print(recursive_labels)
+        label_length = len(list(node_labels.values())[0].split())
+        assert label_length <= maximum, "display should only print <= maximum atoms."

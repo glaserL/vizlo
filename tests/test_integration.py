@@ -28,9 +28,14 @@ def test_instanciations():
     _ = Debuggo(["0"])
 
 
-def test_parameters():
-    _ = Debuggo(["1"], print_previous=True)
-    _ = Debuggo(["1"], print_previous=True)
+def test_parameters_exist():
+    debuggo = Debuggo()
+    debuggo.paint(atom_draw_maximum=True)
+    debuggo.paint(print_entire_models=False)
+
+
+def test_paint_without_program_doesnt_throw():
+    pass
 
 
 def test_inherits_control_methods():
@@ -134,3 +139,13 @@ def test_calling_paint_should_return_a_plottable_figure():
     result = ctl.paint()
     assert result is not None, "Debuggo.paint() should return a result."
     assert isinstance(result, np.ndarray), "Debuggo.paint() should return a plottable array."
+
+def testy_test():
+    # Just for playing around purposes
+    ctl = Debuggo(["0"])
+    long_prg = ""
+    for x in "abcdefghijklmopqrstuvwxyz":
+        long_prg += f"{x}."
+    ctl.add("base", [], long_prg)
+    ctl.paint()
+    plt.show()
