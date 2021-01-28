@@ -8,20 +8,20 @@ from vizlo.graph import NetworkxDisplay, get_width_and_height_of_text_label
 
 def create_simple_diGraph():
     graph = nx.DiGraph()
-    a = SolverState({"a", " b", " c", " d"}, 0)
-    b = SolverState({"b"}, 1)
+    a = SolverState({"a", " b", " c", " d"}, True, 0)
+    b = SolverState({"b"}, True, 1)
     graph.add_edge(a, b, rule="rule")
     return graph
 
 
 def create_diGraph_with_mergable_nodes():
     g = nx.DiGraph()
-    empty = SolverState(set(), 0)
-    b = SolverState({"a", "b"}, 1)
-    c = SolverState({"a"}, 1)
-    d = SolverState(set(), 1)
-    e = SolverState({"a", "b"}, 2)
-    f = SolverState({"a", "b"}, 2)
+    empty = SolverState(set(), True, 0)
+    b = SolverState({"a", "b"}, True, 1)
+    c = SolverState({"a"}, True, 1)
+    d = SolverState(set(), True, 1)
+    e = SolverState({"a", "b"}, True, 2)
+    f = SolverState({"a", "b"}, True, 2)
     h = SolverState(set(), 2)
     g.add_edge(empty, b, rule="{a ; b}.")
     g.add_edge(empty, c, rule="{a ; b}.")
@@ -34,28 +34,28 @@ def create_diGraph_with_mergable_nodes():
 
 def create_diGraph_with_single_branch():
     g = nx.DiGraph()
-    empty = SolverState(set(), 0)
-    a = SolverState({"a"}, 1)
-    b = SolverState({"a", "b"}, 2)
-    c = SolverState({"a"}, 2)
-    d = SolverState({"a"}, 3)
-    e = SolverState({"a", "b", "c"}, 3)
+    empty = SolverState(set(), True, 0)
+    a = SolverState({"a"}, True, 1)
+    b = SolverState({"a", "b"},True,  2)
+    c = SolverState({"a"},True,  2)
+    d = SolverState({"a"},True,  3)
+    e = SolverState({"a", "b", "c"},True,  3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
     g.add_edge(b, e, rule="c :- b.")
     g.add_edge(c, d, rule="c :- b.")
-    return g, empty
+    return g
 
 
 def create_recursive_diGraph():
     g = nx.DiGraph()
-    empty = SolverState(set(), 0)
-    a = SolverState({"x(1)"}, 1)
-    b = SolverState({"x(1)", "y(1)"}, 2)
-    c = SolverState({"x(2)", "x(1)", "y(1)"}, 3)
-    d = SolverState({"y(2)", " x(2)", " y(1)", " x(1)"}, 4)
-    e = SolverState({"x(3)", " y(2)", " x(2)", " y(1)", " x(1)"}, 5)
+    empty = SolverState(set(), True, 0)
+    a = SolverState({"x(1)"}, True, 1)
+    b = SolverState({"x(1)", "y(1)"}, True, 2)
+    c = SolverState({"x(2)", "x(1)", "y(1)"}, True, 3)
+    d = SolverState({"y(2)", " x(2)", " y(1)", " x(1)"}, True, 4)
+    e = SolverState({"x(3)", " y(2)", " x(2)", " y(1)", " x(1)"}, True, 5)
     g.add_edge(empty, a, rule="x(1).")
     g.add_edge(a, b, rule="y(X) :- x(X).")
     g.add_edge(b, c, rule="x(X) :- y(Y); Y=(X-1); X<10.")
@@ -66,30 +66,29 @@ def create_recursive_diGraph():
 
 def create_diGraph_with_multiple_branchoffs():
     g = nx.DiGraph()
-    empty = SolverState(set(), 0)
-    a = SolverState({"a"}, 1)
-    b = SolverState({"a", "b"}, 2)
-    c = SolverState({"a"}, 2)
-    d = SolverState({"a"}, 3)
-    e = SolverState({"a", "b", "c"}, 3)
-    f = SolverState({"a", "b", "d"}, 3)
+    empty = SolverState(set(), True, 0)
+    a = SolverState({"a"}, True, 1)
+    b = SolverState({"a", "b"}, True, 2)
+    c = SolverState({"a"}, True, 2)
+    d = SolverState({"a"}, True, 3)
+    e = SolverState({"a", "b", "c"},True, 3)
+    f = SolverState({"a", "b", "d"}, True, 3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
     g.add_edge(b, e, rule="1{c,d}1 :- b.")
     g.add_edge(c, d, rule="1{c,d}1 :- b.")
     g.add_edge(c, f, rule="1{c,d}1 :- b.")
-    g.nodes(data=True)
     return g, empty
 
 
 def create_diGraph_not_a_tree():
     g = nx.DiGraph()
-    empty = SolverState(set(), 0)
-    a = SolverState({"a"}, 1)
-    b = SolverState({"a", "b"}, 2)
-    c = SolverState({"a"}, 2)
-    d = SolverState({"a", "b"}, 3)
+    empty = SolverState(set(), True, 0)
+    a = SolverState({"a"}, True, 1)
+    b = SolverState({"a","b"},True, 2)
+    c = SolverState({"a"}, True, 2)
+    d = SolverState({"a",  "b"},True, 3)
     g.add_edge(empty, a, rule="a.")
     g.add_edge(a, b, rule="{b} :- a.")
     g.add_edge(a, c, rule="{b} :- a.")
@@ -98,11 +97,33 @@ def create_diGraph_not_a_tree():
     g.nodes(data=True)
     return g, empty
 
+def create_branching_diGraph_with_unsat():
+    g = create_diGraph_with_single_branch()
+    d = SolverState({"a"},True,  3)
+    e = SolverState({"a", "b", "c"},True,  3)
+    sat = SolverState({"a"}, True, 4)
+    unsat = SolverState(set(), False, 4)
+    g.add_edge(d, sat, rule=":- c.")
+    g.add_edge(e, unsat, rule=":- c.")
+    return g
+
+def test_drawing_unsat_and_empty_look_different():
+    g = create_branching_diGraph_with_unsat()
+    display = NetworkxDisplay(g)
+    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+    assert len(constraint_labels) == 1
+    assert list(constraint_labels.keys())[0] == SolverState(set(), False, 4)
+    assert len(edge_labels) == 7
+    assert len(node_labels) == 7
+
+
+
 
 def test_merge_nodes():
     g = create_diGraph_with_mergable_nodes()
     display = NetworkxDisplay(g)
     assert len(display._ng) == 6, "display should merge nodes with identical sets on the same step."
+
 
 def test_returns_printable_array():
     g = create_simple_diGraph()
@@ -112,9 +133,10 @@ def test_returns_printable_array():
 
 
 def test_branching_graph():
-    g, empty = create_diGraph_with_single_branch()
+    g = create_diGraph_with_single_branch()
     display = NetworkxDisplay(g)
     pic = display.draw()
+    plt.show()
 
 
 def test_nx_viz():
@@ -133,25 +155,6 @@ def test_nx_viz_converges_again():
     g, _ = create_diGraph_not_a_tree()
     display = NetworkxDisplay(g)
     display.draw()
-
-
-def test_default_nx_viz():
-    g, _ = create_diGraph_with_multiple_branchoffs()
-    nx.draw_random(g, with_labels=True)
-
-
-
-def get_column_positions(pos, rule_mapping):
-    """For a position mapping node -> pos and a rule mapping rule -> rule_id,
-    returns the x position for each rule."""
-    column_positions = {}  # RULE_ID -> X POSITION
-    for rule, rule_id in rule_mapping.items():
-        for node, xy in pos.items():
-            if node.rule_id == rule_id:
-                column_positions[rule] = xy[0]
-                break
-    return column_positions
-
 
 # Requirement: a recursive subprogram requires to have a CIRCLE
 # of dependencies. As soon as there are more than one path from any node to

@@ -266,7 +266,7 @@ class NetworkxDisplay():
         #nodes = self.make_nodes_around_node_labels(node_labels)
 
         figsize = adjust_figure_size(pos, node_labels)
-        figsize = (4,5)
+        figsize = (4, 5)
         sys.stderr.write(str(figsize))
         plt.figure(figsize=figsize)
         # draw the node cricles.
@@ -290,19 +290,7 @@ class NetworkxDisplay():
                                style="dashed",
                                node_size=node_size)
 
-        node_labels = {}
-        edge_labels = {}
-        recursive_labels = {}
-        rec_edge_c = 0
-        for node, nbrsdict in self._ng.adjacency():
-            node_labels[node] = model_to_string(node.model)
-            for neighbor, edge_attrs in nbrsdict.items():
-                if str(edge_attrs["rule"]).count(":-") > 1:
-                    rec_label = self.make_rec_label(edge_attrs['rule'])
-                    recursive_labels[(node, neighbor)] = f"[{rec_edge_c}] {rec_label}"
-                    rec_edge_c += 1
-                else:
-                    edge_labels[(node, neighbor)] = edge_attrs["rule"]
+        constraint_labels, edge_labels, node_labels, recursive_labels = self.make_labels()
 
         nx.draw_networkx_labels(self._ng, pos,
                                 font_size=8,
@@ -311,6 +299,13 @@ class NetworkxDisplay():
                                     'boxstyle': 'Round4',
                                     'pad' : 1},
                                 labels=node_labels)
+        nx.draw_networkx_labels(self._ng, pos,
+                                font_size=8,
+                              bbox={'facecolor': 'dodgerblue',
+                                    'edgecolor': 'red',
+                                    'boxstyle': 'Round4',
+                                    'pad' : 1},
+                                labels=constraint_labels)
         # Circle
         # DArrow
         # LArrow
@@ -338,6 +333,24 @@ class NetworkxDisplay():
                                     'edgecolor': 'Black',
                                     'boxstyle': 'round'},
                               edge_labels=edge_labels)
+
+    def make_labels(self):
+        node_labels = {}
+        constraint_labels = {}
+        edge_labels = {}
+        recursive_labels = {}
+        for node, nbrsdict in self._ng.adjacency():
+            if node.is_still_active:
+                node_labels[node] = model_to_string(node.model)
+            else:
+                constraint_labels[node] = model_to_string(node.model)
+            for neighbor, edge_attrs in nbrsdict.items():
+                if str(edge_attrs["rule"]).count(":-") > 1:
+                    rec_label = self.make_rec_label(edge_attrs['rule'])
+                    recursive_labels[(node, neighbor)] = rec_label
+                else:
+                    edge_labels[(node, neighbor)] = edge_attrs["rule"]
+        return constraint_labels, edge_labels, node_labels, recursive_labels
 
     def make_node_positions(self):
         node_size = 1000

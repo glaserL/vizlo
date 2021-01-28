@@ -14,20 +14,6 @@ def get_all_trues_from_assumption(assumptions) -> Set[Symbol]:
     return set(atom for atom, truth in assumptions if truth)
 
 
-# def extract_ground_universe_from_control(ctl: Control) -> Set[Symbol]:
-#    return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
-
-def match(symbol: clingo.Symbol, name: str, arity: int) -> bool:
-    return symbol.name == name and len(symbol.arguments) == arity
-
-
-def matches(clingo_symbol: clingo.Symbol, ast_symbol: clingo.ast.Symbol) -> bool:
-    arity = len(ast_symbol.arguments)
-    name = ast_symbol.name
-    result = match(clingo_symbol, name, arity)
-    return result
-
-
 class SolverState:
     """
     Represents a single solver state that is created during execution.
@@ -35,12 +21,13 @@ class SolverState:
     after the last step.
     """
 
-    def __init__(self, model: Set, step: int = -1, falses: Set = set(), adds=None):
+    def __init__(self, model: Set, is_still_active, step: int = -1, falses: Set = set(), adds=None):
         if isinstance(model, list):
             model = set(model)
         self.model: Set = model
         self.step: int = step
         self.falses: Set = falses
+        self.is_still_active: bool = is_still_active
         self.adds: Union[Set, None] = adds
 
     def __repr__(self):
@@ -86,14 +73,14 @@ class OneSolveMaker:
             for m in handle:
                 model = set(m.symbols(atoms=True))
                 adds = model - get_all_trues_from_assumption(assumptions)
-                syms = SolverState(m.symbols(atoms=True), i + 1, adds=adds)
+                syms = SolverState(m.symbols(atoms=True), True, i + 1, adds=adds)
                 print(f"{assumptions} yielded {syms}")
                 solver_states_to_create.append(syms)
                 hacky_counter += 1
             if hacky_counter == 0:
                 # HACK: This means the candidate model became conflicting.
-                print(f"Something broke on {assumptions} at {i}")
-                solver_states_to_create.append(SolverState(set(), i + 1))
+                print(f"Unsatisfiable partial model {assumptions} at step {i}.")
+                solver_states_to_create.append(SolverState(set(), False, i + 1))
             print(f"Is conflicting: {ctl.is_conflicting}")
             handle.wait()  # TODO: Necessary??
             result = handle.get()
@@ -110,18 +97,6 @@ class OneSolveMaker:
             if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
                 syms.append((false, False))
         return syms
-
-    def create_ctl_from_partial_model(self, partial_model):
-        ctl = clingo.Control(["0"])
-        ctl.add("base", [], ''.join(self.rule))
-        ctl.ground([("base", [])])
-        with ctl.backend() as backend:
-            for part in partial_model.model:
-                new_atom = backend.add_atom(part)
-                backend.add_rule(new_atom)
-        ctl.cleanup()
-        return ctl
-
 
 def update_falses_in_solver_states(sss):
     all_possible = set()
@@ -180,7 +155,7 @@ class SolveRunner:
         nodes: List[SolverState] = []
         for node in self._g:
             print(f"{node} at {node.step}")
-            if node.step == step:  # and node.is_still_a_candidate():
+            if node.step == step and node.is_still_active:
                 nodes.append(node)
         return nodes
 
@@ -193,14 +168,6 @@ class SolveRunner:
         for ss in solver_states_to_create:
             self._g.add_edge(assmpts, ss, rule=rule)
 
-    def _get_ctl_for_rule(self, rule: str) -> clingo.Control:
-        print(f"Getting ctl for {rule}")
-        corresponding_prg = self.ctls[rule]
-        corresponding_ctl = _make_new_control_and_ground(corresponding_prg)
-
-        #        corresponding_ctl.ground([("base", [])])
-        print(f"Returning {corresponding_prg} for {rule}")
-        return corresponding_ctl
 
 
-INITIAL_EMPTY_SET = SolverState(model=set(), step=0)
+INITIAL_EMPTY_SET = SolverState(model=set(), is_still_active=True, step=0)

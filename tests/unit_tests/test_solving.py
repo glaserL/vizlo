@@ -132,20 +132,11 @@ def test_choice():
     assert len(nodes[2].model) == 1
 
 def test_has_reached_stable_model_function():
-    one = solver.SolverState(set(["A", "B"]))
-    two = solver.SolverState(set(["A", "B"]))
+    one = solver.SolverState({"A", "B"}, True)
+    two = solver.SolverState({"A", "B"}, True)
     assert one == two
 
 
 def test_solver_state_is_hashable():
-    solver_state = solver.SolverState(None)
+    solver_state = solver.SolverState(None, True)
     assert hash(solver_state)
-
-
-@pytest.mark.skip(reason="This is left as a prototype for future work.")
-def test_recursion():
-    "x(1).\n#program recursive.\nx(X) :- y(X).\ny(X) :- x(X-1); X<4.\n#program recursive."
-    prg = [["x(1)."], ["x(X) :- y(X).", "y(X) :- x(X-1); X<4."]]
-    slv = solver.SolveRunner(prg)
-    g = slv.make_graph2()
-    print(len(g))
