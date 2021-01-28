@@ -147,5 +147,3 @@ def testy_test():
     for x in "abcdefghijklmopqrstuvwxyz":
         long_prg += f"{x}."
     ctl.add("base", [], long_prg)
-    ctl.paint()
-    plt.show()

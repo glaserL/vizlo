@@ -21,7 +21,7 @@ class SolverState:
     after the last step.
     """
 
-    def __init__(self, model: Set, is_still_active, step: int = -1, falses: Set = set(), adds=None):
+    def __init__(self, model: Set, is_still_active, step: int = -1, falses: Set = set(), adds=set()):
         if isinstance(model, list):
             model = set(model)
         self.model: Set = model
