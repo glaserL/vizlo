@@ -1,4 +1,4 @@
-from typing import List, Set, Union
+from typing import List, Set, Union, Tuple
 
 import clingo
 import networkx as nx
@@ -47,12 +47,12 @@ class SolverState:
 
 class OneSolveMaker:
 
-    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads=set()):
+    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads=set(), fixed_assumptions=set()):
         self.main = main
         self.ctl = ctl
         self.rule = rule
         self.singatures_in_heads = symbols_in_heads
-
+        self.fixed_assumptions = fixed_assumptions
     def run(self, i):
         # analytically find recursive components and add them at once
         partial_models = self.main.find_nodes_at_timestep(i)
@@ -60,7 +60,7 @@ class OneSolveMaker:
         for partial_model in partial_models:
             # print(f"Continuing with {partial_model}")
             assumptions = self.create_true_symbols_from_solver_state(partial_model)
-            assumptions.extend(self.main.global_assumptions)
+            assumptions.extend(self.fixed_assumptions)
             print(f"Assumptions: {assumptions}")
             new_partial_models = self._get_new_partial_models(assumptions, self.ctl, i)
             _consolidate_new_solver_states(assumptions, new_partial_models)
@@ -96,6 +96,7 @@ class OneSolveMaker:
             print(f"Sigs: {self.singatures_in_heads}")
             if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
                 syms.append((false, False))
+        syms.extend(self.fixed_assumptions)
         return syms
 
 def update_falses_in_solver_states(sss):
@@ -131,11 +132,12 @@ def _make_new_control_and_ground(current_prg: FlatASTProgram) -> Control:
 
 
 class SolveRunner:
-    def __init__(self, program: ASTProgram, global_assumptions=None, symbols_in_heads_map=dict()):
+    def __init__(self, program: ASTProgram, global_assumptions:Set[Tuple[Symbol, bool]]=None, symbols_in_heads_map=dict()):
         self.EMERGENCY_EXIT_COUNTER = 0
         self.prg: ASTProgram = program
-        print(f"Created AnotherOne with {len(self.prg)} rules and {symbols_in_heads_map} sigs.")
         self.global_assumptions = global_assumptions if global_assumptions is not None else set()
+        print(f"Created AnotherOne with {len(self.prg)} rules, {symbols_in_heads_map} signatures and {len(self.global_assumptions)} global assumptions")
+
         self._g: nx.Graph = nx.DiGraph()
         self._g.add_node(INITIAL_EMPTY_SET)
         self._solvers: List[OneSolveMaker] = []
@@ -149,7 +151,8 @@ class SolveRunner:
             signatures_of_heads = set()
             for rule in rule_set:
                 signatures_of_heads.update(symbols_in_heads_map.get(str(rule), set()))
-            self._solvers.append(OneSolveMaker(self, ctl, rule_set, signatures_of_heads))
+            relevant_assumptions = self.filter_relevant_assumptions(self.global_assumptions, signatures_of_heads)
+            self._solvers.append(OneSolveMaker(self, ctl, rule_set, signatures_of_heads, relevant_assumptions))
 
     def find_nodes_at_timestep(self, step: int) -> List[SolverState]:
         nodes: List[SolverState] = []
@@ -168,6 +171,10 @@ class SolveRunner:
         for ss in solver_states_to_create:
             self._g.add_edge(assmpts, ss, rule=rule)
 
+    def filter_relevant_assumptions(self, global_assumptions, signatures_of_heads):
+        result = [glob for glob in global_assumptions if any(glob[0].match(name, arity) for name, arity in signatures_of_heads)]
+        print(f"{global_assumptions}, {signatures_of_heads} -> {result}")
+        return result
 
 
 INITIAL_EMPTY_SET = SolverState(model=set(), is_still_active=True, step=0)

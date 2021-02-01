@@ -18,9 +18,10 @@ def test_clingo_ast_rules_are_passed_around():
 
     transformed_program = ctl.program
     mocked_solve_runner = SolveRunner(transformed_program)
-    assert isinstance(mocked_solve_runner._solvers[0].rule, clingo.ast.AST)
-    assert isinstance(mocked_solve_runner.prg[0], clingo.ast.AST)
-    assert isinstance(ctl.program[0], clingo.ast.AST)
+    print(mocked_solve_runner.prg[0])
+    assert isinstance(mocked_solve_runner._solvers[0].rule[0], clingo.ast.AST)
+    assert isinstance(mocked_solve_runner.prg[0][0], clingo.ast.AST)
+    assert isinstance(ctl.program[0][0], clingo.ast.AST)
 
 
 def test_instanciations():
@@ -77,6 +78,8 @@ def test_print_only_specific_model_complete_definition():
     ctl.add_to_painter(interesting_model)
 
     g = ctl.make_graph()
+    nx.draw(g, with_labels=True)
+    plt.show()
     nodes = list(g.nodes)
     assert len(nodes) == 3
     assert len(nodes[0].model) == 0
@@ -96,10 +99,13 @@ def test_adding_model_to_painter():
 
 def test_dont_repeat_constraints():
     ctl = Debuggo()
-    prg = "{a}. :- not a. b :- a."
+    prg = "{a}. :- a. {b}."
     ctl.add_and_ground(prg)
     g = ctl.make_graph()
     nodes = list(g.nodes)
+#    nx.draw(g, with_labels=True)
+    ctl.paint(print_entire_models=True)
+    plt.show()
     assert len(nodes) == 5, "Constrained partial models should not show up in the visualization."
     assert len(nodes[4].model) == 2
     assert len(nodes[2].model) == 1
@@ -138,7 +144,7 @@ def test_calling_paint_should_return_a_plottable_figure():
     ctl.add("base", [], "a.")
     result = ctl.paint()
     assert result is not None, "Debuggo.paint() should return a result."
-    assert isinstance(result, np.ndarray), "Debuggo.paint() should return a plottable array."
+    assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
 def testy_test():
     # Just for playing around purposes

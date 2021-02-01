@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 # Types
-from vizlo.types import Program
+from vizlo.types import Program, ASTProgram
 
 
 def program_to_string(program: Program) -> str:
@@ -50,6 +50,7 @@ def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonMode
         true_symbols.update(model.model)
     print(f"Global truths: {true_symbols}")
     global_assumptions = set(((symbol, False) for symbol in universe if not symbol in true_symbols))
+    global_assumptions.update(set(((symbol, True) for symbol in universe if symbol in true_symbols)))
     print(f"Global assumptions: {global_assumptions}")
     return global_assumptions
 
@@ -63,7 +64,7 @@ class Debuggo(Control):
                  atom_draw_maximum=15):
         self.control = Control(arguments, logger, message_limit)
         self.painter: List[PythonModel] = list()
-        self.program: Program = list()
+        self.program: ASTProgram = list()
         self.transformer = JustTheRulesTransformer()
         self._print_changes_only = not print_entire_models
         self._atom_draw_maximum = atom_draw_maximum
