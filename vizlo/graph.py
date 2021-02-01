@@ -274,7 +274,7 @@ class NetworkxDisplay():
         #figsize = adjust_figure_size(pos, node_labels)
         figsize = (4, 5)
         sys.stderr.write(str(figsize))
-        plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize)
 
         # Draw edges into the positions
         normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
@@ -333,6 +333,7 @@ class NetworkxDisplay():
                                     'edgecolor': 'Black',
                                     'boxstyle': 'round'},
                               edge_labels=edge_labels)
+        return fig
 
     def make_labels(self):
         node_labels = {}

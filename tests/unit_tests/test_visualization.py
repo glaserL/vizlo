@@ -128,9 +128,10 @@ def test_merge_nodes():
 
 def test_returns_printable_array():
     g = create_simple_diGraph()
-    display = NetworkxDisplay(g, False)
-    pic = display.draw()
-    assert isinstance(pic, np.ndarray), "draw() should return a plt.show()able object."
+    display = NetworkxDisplay(g, print_changes_only=False)
+    result = display.draw()
+    assert result is not None, "display.draw() should return a result."
+    assert isinstance(result, plt.Figure), "display.draw() should return a plottable array."
 
 
 def test_branching_graph():
