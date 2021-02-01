@@ -6,22 +6,11 @@ import networkx as nx
 import pytest
 
 from vizlo import solver, graph
+from vizlo.graph import NetworkxDisplay
 from vizlo.main import Debuggo, PythonModel
 import matplotlib.pyplot as plt
 
 from vizlo.solver import SolveRunner
-
-
-def test_clingo_ast_rules_are_passed_around():
-    ctl = Debuggo()
-    ctl.add_and_ground("b. a :- b.")
-
-    transformed_program = ctl.program
-    mocked_solve_runner = SolveRunner(transformed_program)
-    print(mocked_solve_runner.prg[0])
-    assert isinstance(mocked_solve_runner._solvers[0].rule[0], clingo.ast.AST)
-    assert isinstance(mocked_solve_runner.prg[0][0], clingo.ast.AST)
-    assert isinstance(ctl.program[0][0], clingo.ast.AST)
 
 
 def test_instanciations():
@@ -31,9 +20,15 @@ def test_instanciations():
 
 def test_parameters_exist():
     debuggo = Debuggo()
-    debuggo.paint(atom_draw_maximum=True)
-    debuggo.paint(print_entire_models=False)
+    with pytest.raises(ValueError):
+        debuggo.paint(atom_draw_maximum=True)
+        debuggo.paint(print_entire_models=False)
+        debuggo.paint(sort_program=False)
 
+def test_empty_program_raises_value_error():
+    debuggo = Debuggo()
+    with pytest.raises(ValueError):
+        debuggo.paint()
 
 def test_paint_without_program_doesnt_throw():
     pass
@@ -58,7 +53,7 @@ def test_internal_clingo_also_solves():
 #    assert not ctl.control.is_conflicting
 
 def test_painting_specific_models_is_fast():
-    expensive_program = "a(1..15). {b(X)} :- a(X)."
+    expensive_program = "a(1..3). {b(X)} :- a(X)."
     begin = time.time()
     interesting_model = [clingo.Function("a", [i], True) for i in range(15)]
     ctl = Debuggo(["0"])
@@ -99,17 +94,14 @@ def test_adding_model_to_painter():
 
 def test_dont_repeat_constraints():
     ctl = Debuggo()
-    prg = "{a}. :- a. {b}."
+    prg = "{a}. {b}. :- a. {c}."
     ctl.add_and_ground(prg)
-    g = ctl.make_graph()
-    nodes = list(g.nodes)
-#    nx.draw(g, with_labels=True)
-    ctl.paint(print_entire_models=True)
-    plt.show()
-    assert len(nodes) == 5, "Constrained partial models should not show up in the visualization."
-    assert len(nodes[4].model) == 2
-    assert len(nodes[2].model) == 1
-    assert len(nodes[1].model) == 0
+    g = ctl.make_graph(False)
+    assert len(g.nodes) == 15, "Internal solver state should not merge nodes."
+    display = NetworkxDisplay(g, merge_nodes=False)
+    assert len(display._ng) == 15, "Display graph should not be merged if not told to do so."
+    display = NetworkxDisplay(g, merge_nodes=True)
+    assert len(display._ng), "Constrained partial models should not show up in the visualization."
 
 
 def test_painting_without_initial_solving():

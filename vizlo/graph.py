@@ -150,7 +150,7 @@ class NetworkxDisplay():
         mapping = {}
         for x in g.nodes():
             for y in g.nodes():
-                if x.step == y.step and x.model == y.model:
+                if x.step == y.step and x.model == y.model and x.is_still_active == y.is_still_active:
                     mapping[x] = y
         return nx.relabel_nodes(g, mapping)
 
@@ -275,13 +275,7 @@ class NetworkxDisplay():
         figsize = (4, 5)
         sys.stderr.write(str(figsize))
         plt.figure(figsize=figsize)
-        # draw the node cricles.
-        #draw_nodes(self._ng, pos,
-                   # node_color=node_color,
-        #           alpha=0.9,
-        #           node_size=node_size,
-                   # cmap=plt.get_cmap(colormap))
-        #           )
+
         # Draw edges into the positions
         normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
 

@@ -1,8 +1,8 @@
 from clingo import Control, Symbol, Model, SolveHandle, SolveResult
-from vizlo.transform import JustTheRulesTransformer
+from vizlo.transform import JustTheRulesTransformer, transform
 from vizlo.graph import NetworkxDisplay
 from vizlo.solver import SolveRunner, INITIAL_EMPTY_SET
-from typing import List, Tuple, Any, Union, Set, Collection
+from typing import List, Tuple, Any, Union, Set, Collection, Dict
 import matplotlib.pyplot as plt
 import networkx as nx
 
@@ -65,6 +65,8 @@ class Debuggo(Control):
         self.control = Control(arguments, logger, message_limit)
         self.painter: List[PythonModel] = list()
         self.program: ASTProgram = list()
+        self.raw_programs: Dict[str, str] = {}
+        self.raw_program: str = ""
         self.transformer = JustTheRulesTransformer()
         self._print_changes_only = not print_entire_models
         self._atom_draw_maximum = atom_draw_maximum
@@ -84,10 +86,12 @@ class Debuggo(Control):
         return self.control.solve(assumptions, on_model, on_statistics, on_finish, yield_, async_)
 
     def add(self, name: str, parameters: List[str], program: str) -> None:
+        self.raw_programs[name] = self.raw_programs.get(name, "") + program
+        self.raw_program += program
         self.control.add(name, parameters, program)
-        new_rules = self.transformer.transform(program)
-        self.program.extend(new_rules)
-        print(f"Recieved {len(new_rules)} rules from transformer:\n{new_rules}")
+        #new_rules = self.transformer.transform(program)
+        #self.program.extend(new_rules)
+        #print(f"Recieved {len(new_rules)} rules from transformer:\n{new_rules}")
 
     def find_nodes_corresponding_to_stable_models(self, g, stable_models):
         correspoding_nodes = set()
@@ -113,25 +117,24 @@ class Debuggo(Control):
         after = len(graph)
         print(f"Removed {before - after} of {before} nodes ({(before - after) / before})")
 
-    def make_graph(self):
-        if len(self.painter):
-            universe = get_ground_universe(self.program)
-            global_assumptions = make_global_assumptions(universe, self.painter)
-            solve_runner = SolveRunner(self.program, global_assumptions, self.transformer.rule2signatures)
+    def make_graph(self, sort=True):
+        if not len(self.raw_program):
+            raise ValueError("Can't paint an empty program.")
         else:
-            solve_runner = SolveRunner(self.program, symbols_in_heads_map=self.transformer.rule2signatures)
-        # if len(self.painter):
-        #     # User decided to print specific models.
-        #
-        #     interesting_nodes = self.find_nodes_corresponding_to_stable_models(g, self.painter)
-        #     self.prune_graph_leading_to_models(g, interesting_nodes)
-        # # we simply print all
+            t = JustTheRulesTransformer()
+            program = t.transform(self.raw_program, sort)
+        if len(self.painter):
+            universe = get_ground_universe(program)
+            global_assumptions = make_global_assumptions(universe, self.painter)
+            solve_runner = SolveRunner(program, global_assumptions, t.rule2signatures)
+        else:
+            solve_runner = SolveRunner(program, symbols_in_heads_map=t.rule2signatures)
         g = solve_runner.make_graph()
         return g
 
-    def paint(self, atom_draw_maximum=20, print_entire_models=False):
-        g = self.make_graph()
-        display = NetworkxDisplay(g,atom_draw_maximum, not print_entire_models)
+    def paint(self, atom_draw_maximum=20, print_entire_models=False, sort_program=True):
+        g = self.make_graph(sort_program)
+        display = NetworkxDisplay(g, atom_draw_maximum, not print_entire_models)
         img = display.draw()
         return img
 
