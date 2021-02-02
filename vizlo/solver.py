@@ -61,7 +61,7 @@ class OneSolveMaker:
             # print(f"Continuing with {partial_model}")
             assumptions = self.create_true_symbols_from_solver_state(partial_model)
             assumptions.extend(self.fixed_assumptions)
-            print(f"Assumptions: {assumptions}")
+            print(f"Assumptions: {assumptions}, model: {partial_model}")
             new_partial_models = self._get_new_partial_models(assumptions, self.ctl, i)
             _consolidate_new_solver_states(assumptions, new_partial_models)
             self.main.update_graph(partial_model, self.rule, new_partial_models)

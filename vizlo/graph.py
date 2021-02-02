@@ -4,7 +4,7 @@ from copy import copy
 from typing import Tuple
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from collections import defaultdict
+from collections import defaultdict, Counter
 import igraph
 import networkx as nx
 from matplotlib.textpath import TextPath
@@ -83,36 +83,69 @@ def assert_no_bi_edges(g: nx.Graph):
     assert len(g.nodes) == len(g.edges) - 1
 
 
-def get_width_and_height_of_text_label(text_label):
-    t = TextPath((0, 0), text_label, size=10)
-    bb = t.get_extents()
-    del t
-    width = max(bb.x0, bb.x1) - min(bb.x0, bb.x1)
-    height = max(bb.y0, bb.y1) - min(bb.y0, bb.y1)
+def get_width_and_height_of_text_label(text_label, fig):
+    t = plt.text(0.5, 0.5, text_label, size=10)
+    r= fig.canvas.get_renderer()
+    #renderer = r
+    bb = t.get_window_extent(renderer=r).transformed(fig.dpi_scale_trans.inverted())
+    width = bb.width
+    height = bb.height
+
+    width, height = bb.width, bb.height
+    #bbox = fig.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    #t = TextPath((0, 0), text_label, size=10)
+    # bb = t.get_extents()
+    # del t
+    # width = max(bb.x0, bb.x1) - min(bb.x0, bb.x1)
+    # width = bb.width
+    # height = max(bb.y0, bb.y1) - min(bb.y0, bb.y1)
+    # height = bb.height
     return width, height
 
 
-def adjust_figure_size(pos, node_labels, dpi=100):
+def adjust_figure_size(pos, plotted_nodes, fig):
     row_set = set()
     col_set = set()
+    highest_in_row = {}
+    widest_in_col = {}
+    nodes_per_column = Counter()
+    nodes_per_row = Counter()
     tricky_map = defaultdict(list)
+    r= fig.canvas.get_renderer()
     max_width = -1
     max_height = -1
-    for node, label in node_labels.items():
+    for node, label in plotted_nodes.items():
+        step = node.step
         x, y = pos[node]
         round_x = round(x)
         round_y = round(y)
-        row_set.add(round_y)
-        col_set.add(round_x)
-        tricky_map[round_y].append(round_x)
-        width, height = get_width_and_height_of_text_label(label)
-        max_width, max_height = max(width, max_width), max(height, max_height)
-    rows = len(row_set)
-    sys.stderr.write(f"w: {max_width}, h: {max_height}")
+        nodes_per_row[round_y] += 1
+        nodes_per_column[round_x] += 1
+        # row_set.add(round_y)
+        # col_set.add(round_x)
+        # tricky_map[round_y].append(round_x)
+        #renderer = r
+        label.update_bbox_position_size(r)
+        bb = label.get_bbox_patch().get_bbox()
+        bb = label.get_window_extent(renderer=r)
+        bb = bb.inverse_transformed(fig.dpi_scale_trans)
+        width = bb.width
+        height = bb.height
+        widest_in_col[round_x] = max(widest_in_col.get(round_x, -math.inf), width)
+        highest_in_row[round_y] = max(highest_in_row.get(round_y, -math.inf), height)
+        #max_width, max_height = max(width, max_width), max(height, max_height)
+    #rows = len(row_set)
+    #sys.stderr.write(f"w: {max_width}, h: {max_height}")
     # cols = max([len(lst) for lst in tricky_map.values()])
-    cols = len(col_set)
+    #cols = len(col_set)
+    height = 0
+    for _, h in highest_in_row.items():
+        height += h#*fig.dpi
+    x = height
     # return cols*max_width/150, max_height*rows*1.5/10
-    return cols, rows
+    print(height)
+    height = height
+    fig.set_figheight(height, forward=True)
 
 
 class NetworkxDisplay():
@@ -227,20 +260,21 @@ class NetworkxDisplay():
         # 1. Figure out node positions using igraph
         print(f"Drawing graph with {len(self._ng)} nodes.")
         node_size, pos = self.make_node_positions()
+        node_size = 300
 
         node_labels = self.make_node_labels(self._ng)
         print(node_labels)
 
-        figsize = adjust_figure_size(pos, node_labels)
         pos = {node: (x, y) for node, (x, y) in pos.items()}
-        fig, (ax1, ax2) = plt.subplots(1, 2, dpi=100)
-        fig.tight_layout()
-
-        xs, ys = zip(*pos.values())
-        a = sorted(list(set(xs)))[0]
-        b = sorted(list(set(xs)))[1]
-        c = abs(a) - abs(b)
-        ys = [y - c for y in ys]
+        #fig, (ax1, ax2) = plt.subplots(1, 2, dpi=100,constrained_layout=True)
+        figsize = (4,6)
+        fig = plt.figure(dpi= 100, figsize=figsize, constrained_layout=True)
+        specs = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1,2])
+        ax1 = fig.add_subplot(specs[0, 0])
+        ax2 = fig.add_subplot(specs[0, 1])
+        ax2.autoscale(enable=True)
+        #fig.set_size_inches(11, 8)
+#                                  height_ratios=heights)
         # nx.draw_networkx(self._ng, pos, ax=ax2,with_labels=True)
 
         ax1.tick_params(
@@ -251,11 +285,6 @@ class NetworkxDisplay():
             labelbottom=False,
             labelleft=False,
         )
-        #nx.draw_networkx_nodes(self._ng, pos, ax=ax1, node_size=0)
-        #nx.draw_networkx(self._ng, ax=ax1)
-        # nx.draw_networkx_edge_labels(self._ng, pos, ax=ax2)
-        # nx.draw_networkx_edge_labels(self._ng, pos, ax=ax1)
-        # Draw edges into the positions
         normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
 
         nx.draw_networkx_edges(self._ng, pos,
@@ -277,7 +306,8 @@ class NetworkxDisplay():
 
         constraint_labels, edge_labels, node_labels, recursive_labels, choice_labels, stable_labels, constraint_rule_labels = self.make_labels()
 
-        nx.draw_networkx_labels(self._ng, pos,
+        plotted_nodes = {}
+        x = nx.draw_networkx_labels(self._ng, pos,
                                 font_size=8,
                                 ax=ax2,
                                 bbox={'facecolor': 'dodgerblue',
@@ -285,7 +315,8 @@ class NetworkxDisplay():
                                       'boxstyle': 'Round4',
                                       'pad': 1},
                                 labels=node_labels)
-        nx.draw_networkx_labels(self._ng, pos,
+        plotted_nodes.update(x)
+        x = nx.draw_networkx_labels(self._ng, pos,
                                 font_size=8,
                                 ax=ax2,
                                 font_color='white',
@@ -295,7 +326,8 @@ class NetworkxDisplay():
                                       'boxstyle': 'Round4',
                                       'pad': 1},
                                 labels=constraint_labels)
-        nx.draw_networkx_labels(self._ng, pos,
+        plotted_nodes.update(x)
+        x = nx.draw_networkx_labels(self._ng, pos,
                                 font_size=8,
                                 ax=ax2,
                                 font_color='black',
@@ -304,70 +336,60 @@ class NetworkxDisplay():
                                       'boxstyle': 'Round4',
                                       'pad': 1},
                                 labels=stable_labels)
+        plotted_nodes.update(x)
+
+        all_rule_labels = choice_labels
+        all_rule_labels.update(constraint_rule_labels)
+        all_rule_labels.update(recursive_labels)
+        all_rule_labels.update(edge_labels)
+
+        texts = self.draw_rule_labels(self._ng, pos,
+                              label_pos=.5,
+                              rotate=False,
+                              ax=ax1,
+                              font_size=10,
+                              horizontalalignment="right",
+                              font_family="monospace",
+                              bbox={'facecolor': 'white',
+                                    'edgecolor': 'none',
+                                    'boxstyle': 'round'},
+                              edge_labels=all_rule_labels)
+        min_text_x = +math.inf
+        max_text_x = -math.inf
+        for text in texts.values():
+            x = text.get_window_extent(fig.canvas.get_renderer()).bounds
+            min_text_x = min(min_text_x, x[0])
+            max_text_x = max(max_text_x, x[0])
+        min_text_x, max_text_x = ax2.transData.inverted().transform((min_text_x, max_text_x))
 
         ax1.set_ylim(ax2.get_ylim())
-#        ax1.set_xlim(ax2.get_xlim())
+        #ax1.set_xlim(min_text_x, 1)
 
 
-
-        self.draw_rule_labels(self._ng, pos,
-                              label_pos=.5,
-                              rotate=False,
-                              ax=ax1,
-                              font_size=10,
-                              horizontalalignment="right",
-                              font_family="monospace",
-                              bbox={'facecolor': 'white',
-                                    'edgecolor': 'none',
-                                    'boxstyle': 'round'},
-                              edge_labels=choice_labels)
-        self.draw_rule_labels(self._ng, pos,
-                              label_pos=.5,
-                              rotate=False,
-                              ax=ax1,
-                              font_size=10,
-                              horizontalalignment="right",
-                              font_family="monospace",
-                              bbox={'facecolor': 'white',
-                                    'edgecolor': 'none',
-                                    'boxstyle': 'round'},
-                              edge_labels=constraint_rule_labels)
-        self.draw_rule_labels(self._ng, pos,
-                              label_pos=.5,
-                              rotate=False,
-                              ax=ax1,
-                              horizontalalignment="right",
-                              font_size=7,
-                              font_family="monospace",
-                              bbox={'facecolor': 'White',
-                                    'edgecolor': 'none',
-                                    'boxstyle': 'round'},
-                              edge_labels=recursive_labels)
-        self.draw_rule_labels(self._ng, pos,
-                              label_pos=.5,
-                              rotate=False,
-                              ax=ax1,
-
-                              horizontalalignment="right",
-                              font_size=10,
-                              font_family="monospace",
-                              bbox={'facecolor': 'White',
-                                    'edgecolor': 'none',
-                                    'boxstyle': 'round'},
-                              edge_labels=edge_labels)
         ax2_bounds = ax2.get_tightbbox(fig.canvas.get_renderer()).bounds
 
-        x_range = ax2_bounds[0], ax2_bounds[0]+ax2_bounds[2]
+        x_range = ax2_bounds[0], ax2_bounds[0]+ax2_bounds[2]/2
         min_x, max_x = ax2.transData.inverted().transform(x_range)
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
         ax2.spines['bottom'].set_visible(False)
         ax2.spines['left'].set_visible(False)
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        ax1.spines['bottom'].set_visible(False)
-        ax1.spines['left'].set_visible(False)
-        ax2.hlines(ys, min_x, max_x, linestyles='dashed', colors="grey", zorder=0)
+        # ax1.spines['top'].set_visible(False)
+        # ax1.spines['right'].set_visible(False)
+        # ax1.spines['bottom'].set_visible(False)
+        # ax1.spines['left'].set_visible(False)
+
+        xs, ys = zip(*pos.values())
+        a = sorted(list(set(xs)))[0]
+        b = sorted(list(set(xs)))[1]
+        c = abs(a) - abs(b)
+        ys = [y - c for y in ys]
+        # plt.show()
+        #fig.canvas.draw()
+        #adjust_figure_size(pos, plotted_nodes, fig)
+        #ax2.hlines(ys, min_x, max_x, linestyles='dashed', colors="grey", zorder=0)
+
+        ax2.autoscale_view()
         return fig
 
     def make_labels(self):
