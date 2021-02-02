@@ -106,15 +106,22 @@ def create_diGraph_not_a_tree():
     g.nodes(data=True)
     return g, empty
 
+def create_diGraph_with_all_node_types():
+    g = nx.DiGraph()
+    empty = SolverState(set(), True, 0)
+    a = SolverState(set(), True, 1)
+    b = SolverState({"b"}, True, 2)
+    c = SolverState(set(), True, 1)
+    d = SolverState(set(), False, 2)
 
 def test_drawing_unsat_and_empty_look_different():
     g = create_branching_diGraph_with_unsat()
     assert len(g) == 10
     display = NetworkxDisplay(g, False)
-    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+    constraint_labels, edge_labels, node_labels, _, _, _,_ = display.make_labels()
     assert len(constraint_labels) == 1
     assert list(constraint_labels.keys())[0] == SolverState(set(), False, 4)
-    assert len(edge_labels) == 7
+    assert len(edge_labels) == 5
     assert len(node_labels) == 7
 
 
@@ -190,7 +197,7 @@ def test_get_viz_size():
 def test_only_new_models_are_shown():
     g = create_branching_diGraph_with_unsat()
     display = NetworkxDisplay(g)
-    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+    constraint_labels, edge_labels, node_labels, recursive_labels, _, _,_ = display.make_labels()
 
     for node, label in node_labels.items():
         label = set() if label == "\u2205" else set(label.split())
@@ -200,7 +207,7 @@ def test_only_new_models_are_shown():
             assert node.model == label, "The last node should represent the stable model."
 
     display = NetworkxDisplay(g, print_changes_only=False)
-    constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+    constraint_labels, edge_labels, node_labels, recursive_labels, _, _, _ = display.make_labels()
 
     for node, label in node_labels.items():
         label = set() if label == "\u2205" else set(label.split())
@@ -217,7 +224,7 @@ def test_max_model_size_parameter():
         g.add_edge(a, b, rule="Wow")
         display = NetworkxDisplay(g, atom_draw_maximum=maximum, print_changes_only=False)
         display.draw()
-        constraint_labels, edge_labels, node_labels, recursive_labels = display.make_labels()
+        constraint_labels, edge_labels, node_labels, recursive_labels, _, _, _ = display.make_labels()
         print(node_labels)
         print(constraint_labels)
         print(edge_labels)

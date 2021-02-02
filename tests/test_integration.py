@@ -144,4 +144,8 @@ def testy_test():
     long_prg = ""
     for x in "abcdefghijklmopqrstuvwxyz":
         long_prg += f"{x}."
-    ctl.add("base", [], long_prg)
+    prg = "{a}. :- not a. b :- c, a. c :- not b."
+    prg = "a. b :- a. {c}. d :- c. {f} :- d. :- f."
+    ctl.add("base", [], prg)
+    ctl.paint(sort_program=True, print_entire_models=True)
+    plt.show()
