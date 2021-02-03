@@ -132,10 +132,10 @@ class Debuggo(Control):
         g = solve_runner.make_graph()
         return g
 
-    def paint(self, atom_draw_maximum=20, print_entire_models=False, sort_program=True):
+    def paint(self, atom_draw_maximum=20, print_entire_models=False, sort_program=True, **kwargs):
         g = self.make_graph(sort_program)
         display = NetworkxDisplay(g, atom_draw_maximum, not print_entire_models)
-        img = display.draw()
+        img = display.draw(**kwargs)
         return img
 
     def add_and_ground(self, prg):

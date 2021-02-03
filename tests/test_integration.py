@@ -20,10 +20,14 @@ def test_instanciations():
 
 def test_parameters_exist():
     debuggo = Debuggo()
-    with pytest.raises(ValueError):
-        debuggo.paint(atom_draw_maximum=True)
-        debuggo.paint(print_entire_models=False)
-        debuggo.paint(sort_program=False)
+    debuggo.add("base", [], "a.")
+    debuggo.paint(atom_draw_maximum=True)
+    debuggo.paint(print_entire_models=False)
+    debuggo.paint(sort_program=False)
+    debuggo.paint(figsize=(3,4))
+    debuggo.paint(model_font_size=23)
+    debuggo.paint(rule_font_size=13)
+    debuggo.paint(dpi=100)
 
 def test_empty_program_raises_value_error():
     debuggo = Debuggo()
@@ -144,8 +148,22 @@ def testy_test():
     long_prg = ""
     for x in "abcdefghijklmopqrstuvwxyz":
         long_prg += f"{x}."
-    prg = "{a}. :- not a. b :- c, a. c :- not b."
-    prg = "a. b :- a. {c}. d :- c. {f} :- d. :- f."
-    ctl.add("base", [], long_prg)
-    ctl.paint(sort_program=True, print_entire_models=True)
+    prg = "{a}. :- not a. b :- c, a. c :- not b. :- c. "
+    queens = """
+     
+ % domain
+ number(1..4).
+
+ % alldifferent
+ 1 { q(X,Y) : number(Y) } 1 :- number(X).
+ 1 { q(X,Y) : number(X) } 1 :- number(Y).
+ % remove conflicting answers
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
+ """
+
+    #prg = "a. b :- a. {c}. d :- c. {f} :- d. "(6.4, 4.8)
+    ctl.add("base", [], queens)
+    ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
     plt.show()
