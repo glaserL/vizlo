@@ -17,8 +17,10 @@ def program_to_string(program: Program) -> str:
     return prg
 
 
-class PythonModel():
-    """"Lazy model that allows us to store stuff from a clingo model in python"""
+class PythonModel:
+    """
+    Container for both clingo.Model and Set[Symbol] to ease interaction.
+    """
 
     def __init__(self, model: Union[Model, Set[Symbol]]):
         if isinstance(model, Model):
@@ -55,7 +57,7 @@ def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonMode
     return global_assumptions
 
 
-class Debuggo(Control):
+class VizloControl(Control):
 
     def add_to_painter(self, model: Union[Model, PythonModel]):
         self.painter.append(PythonModel(model))
@@ -89,9 +91,6 @@ class Debuggo(Control):
         self.raw_programs[name] = self.raw_programs.get(name, "") + program
         self.raw_program += program
         self.control.add(name, parameters, program)
-        #new_rules = self.transformer.transform(program)
-        #self.program.extend(new_rules)
-        #print(f"Recieved {len(new_rules)} rules from transformer:\n{new_rules}")
 
     def find_nodes_corresponding_to_stable_models(self, g, stable_models):
         correspoding_nodes = set()
@@ -104,7 +103,7 @@ class Debuggo(Control):
                     break
         return correspoding_nodes
 
-    def prune_graph_leading_to_models(self, graph, models_as_nodes):
+    def prune_graph_leading_to_models(self, graph: nx.DiGraph, models_as_nodes):
         before = len(graph)
         relevant_nodes = set()
         for model in models_as_nodes:
@@ -117,12 +116,19 @@ class Debuggo(Control):
         after = len(graph)
         print(f"Removed {before - after} of {before} nodes ({(before - after) / before})")
 
-    def make_graph(self, sort=True):
+    def _make_graph(self, _sort=True):
+        """
+        Ties together transformation and solving. Transforms the already added program parts and creates a solving tree.
+        :param _sort: Whether the program should be sorted automatically. Setting this to false will likely result into
+        wrong results!
+        :return:
+        :raises ValueError:
+        """
         if not len(self.raw_program):
             raise ValueError("Can't paint an empty program.")
         else:
             t = JustTheRulesTransformer()
-            program = t.transform(self.raw_program, sort)
+            program = t.transform(self.raw_program, _sort)
         if len(self.painter):
             universe = get_ground_universe(program)
             global_assumptions = make_global_assumptions(universe, self.painter)
@@ -133,20 +139,20 @@ class Debuggo(Control):
         return g
 
     def paint(self, atom_draw_maximum=20, print_entire_models=False, sort_program=True, **kwargs):
-        g = self.make_graph(sort_program)
+        g = self._make_graph(sort_program)
         display = NetworkxDisplay(g, atom_draw_maximum, not print_entire_models)
         img = display.draw(**kwargs)
         return img
 
-    def add_and_ground(self, prg):
-        """Short cut for complex add and ground calls, should only be used for debugging purposes.s"""
+    def _add_and_ground(self, prg):
+        """Short cut for complex add and ground calls, should only be used for debugging purposes."""
         self.add("base", [], prg)
         self.ground([("base", [])])
 
 
 def _main():
     prg = "a. {b} :- a."
-    ctl = Debuggo()
+    ctl = VizloControl()
     ctl.add("base", [], prg)
     x = ctl.paint()
 

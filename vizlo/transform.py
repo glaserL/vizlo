@@ -106,7 +106,6 @@ class JustTheRulesTransformer(Transformer):
             tmp = self._head_signature2rule.get(signature, list())
             tmp.append(rule)
             self._head_signature2rule[signature] = tmp
-
             tmp = self.rule2signatures.get(str(rule), [])
             tmp.append(signature)
             self.rule2signatures[str(rule)] = tmp
@@ -152,17 +151,22 @@ class JustTheRulesTransformer(Transformer):
 def make_dependency_graph(rules: List[clingo.ast.Rule],
                           head_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]],
                           body_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]]) -> nx.DiGraph:
-    """We draw a dependency graph based on which rule head contains which literals.
+    """
+    We draw a dependency graph based on which rule head contains which literals.
     That way we know, that in order to have a rule r with a body containg literal l, all rules that have l in their
     heads must come before r.
+    :param rules: list of rules
+    :param head_dependencies: Mapping from a signature to all rules containg them in the head
+    :param body_dependencies: mapping from a signature to all rules containing them in the body
+    :return:
     """
     g = nx.DiGraph()
-    # first, all rules with containing the same signature in their heads are dependent of each other
+    # Add independent rules
     for _, rules_with_head in head_dependencies.items():
         for x in rules_with_head:
             for y in rules_with_head:
                 g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
-
+    # Add dependents
     for head_signature, rules_with_head in head_dependencies.items():
         dependent_rules = body_dependencies.get(head_signature, [])
         for parent_rule in rules_with_head:
@@ -217,5 +221,14 @@ def parse_rule_set(rule_set: RuleSet) -> ASTRuleSet:
 
 
 def transform(program: str, sort: bool = True) -> ASTProgram:
+    """
+    Receives a logic program as a string and returns an ASTProgram. An ASTProgram consists of multiple
+    RuleSets that each contain Rules that are interdependent of each.
+    If they are sorted, the RuleSet at index i does only depend on RuleSets with index j>i.
+    :param program: a logic program as a string
+    :param sort: whether to sort by dependencies. This should always be true, vizlo does not guarantee correct results
+    for unsorted programs.
+    :return: a sorted (or unsorted) ASTProgram consisting of RuleSets consisting of Rules.
+    """
     t = JustTheRulesTransformer()
     return t.transform(program, sort)

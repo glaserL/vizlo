@@ -7,19 +7,19 @@ import pytest
 
 from vizlo import solver, graph
 from vizlo.graph import NetworkxDisplay
-from vizlo.main import Debuggo, PythonModel
+from vizlo.main import VizloControl, PythonModel
 import matplotlib.pyplot as plt
 
 from vizlo.solver import SolveRunner
 
 
 def test_instanciations():
-    _ = Debuggo()
-    _ = Debuggo(["0"])
+    _ = VizloControl()
+    _ = VizloControl(["0"])
 
 
 def test_parameters_exist():
-    debuggo = Debuggo()
+    debuggo = VizloControl()
     debuggo.add("base", [], "a.")
     debuggo.paint(atom_draw_maximum=True)
     debuggo.paint(print_entire_models=False)
@@ -30,7 +30,7 @@ def test_parameters_exist():
     debuggo.paint(dpi=100)
 
 def test_empty_program_raises_value_error():
-    debuggo = Debuggo()
+    debuggo = VizloControl()
     with pytest.raises(ValueError):
         debuggo.paint()
 
@@ -39,7 +39,7 @@ def test_paint_without_program_doesnt_throw():
 
 
 def test_inherits_control_methods():
-    debuggo = Debuggo()
+    debuggo = VizloControl()
     ctl = clingo.Control()
     attrs = [attr for attr in dir(ctl) if not attr.startswith("_")]
     print(attrs)
@@ -49,7 +49,7 @@ def test_inherits_control_methods():
 
 @pytest.mark.skip
 def test_internal_clingo_also_solves():
-    ctl = Debuggo()
+    ctl = VizloControl()
     ctl.add("base", [], "a :- b.\nb.")
     ctl.solve()
 
@@ -60,8 +60,8 @@ def test_painting_specific_models_is_fast():
     expensive_program = "a(1..3). {b(X)} :- a(X)."
     begin = time.time()
     interesting_model = [clingo.Function("a", [i], True) for i in range(15)]
-    ctl = Debuggo(["0"])
-    ctl.add_and_ground(expensive_program)
+    ctl = VizloControl(["0"])
+    ctl._add_and_ground(expensive_program)
     ctl.add_to_painter(interesting_model)
     ctl.paint()
     end = time.time()
@@ -69,14 +69,14 @@ def test_painting_specific_models_is_fast():
 
 
 def test_print_only_specific_model_complete_definition():
-    ctl = Debuggo(["0"])
+    ctl = VizloControl(["0"])
     prg = "{a}. b :- a."
-    ctl.add_and_ground(prg)
+    ctl._add_and_ground(prg)
 
     interesting_model = {clingo.Function("a", []), clingo.Function("b", [])}
     ctl.add_to_painter(interesting_model)
 
-    g = ctl.make_graph()
+    g = ctl._make_graph()
     nx.draw(g, with_labels=True)
     plt.show()
     nodes = list(g.nodes)
@@ -86,7 +86,7 @@ def test_print_only_specific_model_complete_definition():
 
 
 def test_adding_model_to_painter():
-    ctl = Debuggo()
+    ctl = VizloControl()
     prg = "{a}. b :- a."
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
@@ -97,10 +97,10 @@ def test_adding_model_to_painter():
 
 
 def test_dont_repeat_constraints():
-    ctl = Debuggo()
+    ctl = VizloControl()
     prg = "{a}. {b}. :- a. {c}."
-    ctl.add_and_ground(prg)
-    g = ctl.make_graph(False)
+    ctl._add_and_ground(prg)
+    g = ctl._make_graph(False)
     assert len(g.nodes) == 15, "Internal solver state should not merge nodes."
     display = NetworkxDisplay(g, merge_nodes=False)
     assert len(display._ng) == 15, "Display graph should not be merged if not told to do so."
@@ -109,7 +109,7 @@ def test_dont_repeat_constraints():
 
 
 def test_painting_without_initial_solving():
-    ctl = Debuggo(["0"])
+    ctl = VizloControl(["0"])
     ctl.add("base", [], "x(0..3). {y(X)} :- x(X).")
     ctl.ground([("base", [])])
     interesting_model = set()
@@ -120,23 +120,23 @@ def test_painting_without_initial_solving():
 
     interesting_model = PythonModel(interesting_model)
     ctl.add_to_painter(interesting_model)
-    g = ctl.make_graph()
+    g = ctl._make_graph()
     assert len(g) > 0, "Painter should work independently of solving process."
 
 
 def test_painting_with_adding_rules_during_solving():
-    ctl = Debuggo(["0"])
+    ctl = VizloControl(["0"])
     ctl.add("base", [], "{a; b; c}.")
     ctl.ground([("base", [])])
     with ctl.solve(yield_=True) as handle:
         for m in handle:
             ctl.add_to_painter(m)
             break
-    g = ctl.make_graph()
+    g = ctl._make_graph()
     assert len(g) == 2
 
 def test_calling_paint_should_return_a_plottable_figure():
-    ctl = Debuggo(["0"])
+    ctl = VizloControl(["0"])
     ctl.add("base", [], "a.")
     result = ctl.paint()
     assert result is not None, "Debuggo.paint() should return a result."
@@ -144,7 +144,7 @@ def test_calling_paint_should_return_a_plottable_figure():
 
 def testy_test():
     # Just for playing around purposes
-    ctl = Debuggo(["0"])
+    ctl = VizloControl(["0"])
     long_prg = ""
     for x in "abcdefghijklmopqrstuvwxyz":
         long_prg += f"{x}."
@@ -167,3 +167,15 @@ def testy_test():
     ctl.add("base", [], queens)
     ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
     plt.show()
+
+def test_make_documentation_img():
+    ctl = VizloControl(["0"])
+    prg = "{a}. b :- a. b :- c. c :- b."
+    ctl.add("base", [], prg)
+    ctl.paint()
+    #plt.show()
+    plt.savefig("../docs/img/sample.png", dpi=300)
+
+def test_pretty_import():
+    from vizlo import VizloControl
+    c = VizloControl()
