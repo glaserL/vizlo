@@ -165,14 +165,16 @@ def testy_test():
 
     #prg = "a. b :- a. {c}. d :- c. {f} :- d. "(6.4, 4.8)
     ctl.add("base", [], queens)
-    ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
+    #ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
+    #ctl.paint()
+    ctl.paint(figsize=(30,5), dpi=200, model_font_size=5)
     plt.show()
 
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
-    prg = "{a}. b :- a. b :- c. c :- b."
+    prg = "{a}. :- a. {b}."
     ctl.add("base", [], prg)
-    ctl.paint()
+    ctl.paint(dpi=300, print_entire_models=True)
     #plt.show()
     plt.savefig("../docs/img/sample.png", dpi=300)
 

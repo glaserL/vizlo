@@ -1,20 +1,38 @@
-# debuggo
-Debuggo is a visualization extension for the clingo solver TODO link.
-Using clingo you can visualize the solving of a program in an iterative way.
-For an indepth manual you can look at the paper LINK
+# vizlo
+Vizlo is a visualization extension for [clingo](https://potassco.org/clingo/). 
+It is intended to help you visualize and potentially debug programs by showing an 
+iterative simulation of the solving process.
+
 
 ## Installation
 
+Vizlo is distributed over pypi:
+```
+pip install vizlo
+```
+
+# Example
+The resulting output is a visualization like the one below. Vizlo sorts the statements of a given logic
+program by their dependencies. That way we can simulate an iterative solving flow. Recursions and sets of rules that an 
+atom depends on are merged together into one solving step (one line in the graphic.) 
+
+```
+TODO
+```
+---
+![Example Program](docs/img/sample.png "Sample solver tree")
+
 
 ## Usage
-Debuggo wraps itself around the clingo.Control object. You can use this object just like you would
-use the normal clingo control object.
+Debuggo wraps itself around the Control object of the clingo python API. We assume you are familiar with the 
+[clingo python API](https://potassco.org/clingo/python-api/5.4/).
+
 
 ```python
-import debuggo
+import vizlo
 import matplotlib.pyplot as plt
 
-ctl = debuggo.main.Debuggo()
+ctl = vizlo.VizloControl()
 ctl.add("base", [], "a. a :- b.")
 ctl.ground([("base", [])])
 with ctl.solve(yield_=True) as handle:
@@ -25,4 +43,3 @@ with ctl.solve(yield_=True) as handle:
 ctl.paint()
 plt.show()
 ```
-TODO: Put the resulting image here!
