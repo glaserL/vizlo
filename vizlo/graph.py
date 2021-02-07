@@ -107,7 +107,18 @@ def get_width_and_height_of_text_label(text_label, fig):
     return width, height
 
 
-def adjust_figure_size(pos, plotted_nodes, fig):
+def adjust_figure_size(plotted_nodes, fig):
+    nodes_per_row = Counter()
+    rows = set()
+    for node, label in plotted_nodes.items():
+        step = node.step
+        nodes_per_row[step] += 1
+        rows.add(step)
+    _, num_of_cols = nodes_per_row.most_common(1)[0]
+    fig.set_size_inches((max(5,num_of_cols), max(8,len(rows))), forward=True)
+
+
+def adjust_figure_size2(pos, plotted_nodes, fig, ax2):
     row_set = set()
     col_set = set()
     highest_in_row = {}
@@ -125,16 +136,19 @@ def adjust_figure_size(pos, plotted_nodes, fig):
         round_y = round(y)
         nodes_per_row[round_y] += 1
         nodes_per_column[round_x] += 1
-        # row_set.add(round_y)
-        # col_set.add(round_x)
-        # tricky_map[round_y].append(round_x)
-        # renderer = r
+
+
         label.update_bbox_position_size(r)
         # bb = label.get_bbox_patch().get_bbox()
-        bb = label.get_window_extent(renderer=r)
-        # bb = bb.inverse_transformed(fig.dpi_scale_trans)
+        bb = label.get_window_extent()
+
+        axis_to_data = ax2.transAxes + ax2.transData.inverted()
+        ax1_data_to_axis = axis_to_data.inverted()
         width = bb.width
         height = bb.height
+        width = ax1_data_to_axis.transform(bb)
+        height = ax1_data_to_axis.transform(height)
+        # bb = bb.inverse_transformed(fig.dpi_scale_trans)
         widest_in_col[round_x] = max(widest_in_col.get(round_x, -math.inf), width)
         highest_in_row[round_y] = max(highest_in_row.get(round_y, -math.inf), height)
         # max_width, max_height = max(width, max_width), max(height, max_height)
@@ -175,13 +189,15 @@ class NetworkxDisplay():
             return "\u2205"
         result_str = ""
         how_many_per_line = math.sqrt(len(model))
-        tmp = []
-        for m in list(model)[:min(len(model), self.atom_draw_maximum)]:
+        atoms_to_draw = list(model)[:min(len(model), self.atom_draw_maximum)]
+        how_many_per_line = math.sqrt(sum(len(str(m)) for m in atoms_to_draw))
+        tmp = ""
+        for m in atoms_to_draw:
             if len(tmp) >= how_many_per_line:
-                result_str += " ".join(tmp) + "\n"
-                tmp.clear()
-            tmp.append(str(m))
-        result_str += " ".join(tmp)
+                result_str += tmp + "\n"
+                tmp = ""
+            tmp += str(m)
+        result_str += tmp
         return f"{result_str}"
 
     def solver_state_to_string(self, solver_state: SolverState) -> str:
@@ -275,14 +291,137 @@ class NetworkxDisplay():
         for node, label in node2label.keys():
             width, height = get_width_and_height_of_text_label(node)
 
+    def draw_networkx_labels(self,
+            G,
+            pos,
+            labels=None,
+            font_size=12,
+            font_color="k",
+            font_family="sans-serif",
+            font_weight="normal",
+            alpha=None,
+            bbox=None,
+            horizontalalignment="center",
+            verticalalignment="center",
+            ax=None,
+    ):
+        """Draw node labels on the graph G.
+
+        Parameters
+        ----------
+        G : graph
+           A networkx graph
+
+        pos : dictionary
+           A dictionary with nodes as keys and positions as values.
+           Positions should be sequences of length 2.
+
+        labels : dictionary, optional (default=None)
+           Node labels in a dictionary keyed by node of text labels
+           Node-keys in labels should appear as keys in `pos`.
+           If needed use: `{n:lab for n,lab in labels.items() if n in pos}`
+
+        font_size : int
+           Font size for text labels (default=12)
+
+        font_color : string
+           Font color string (default='k' black)
+
+        font_family : string
+           Font family (default='sans-serif')
+
+        font_weight : string
+           Font weight (default='normal')
+
+        alpha : float or None
+           The text transparency (default=None)
+
+        horizontalalignment : {'center', 'right', 'left'}
+           Horizontal alignment (default='center')
+
+        verticalalignment : {'center', 'top', 'bottom', 'baseline', 'center_baseline'}
+            Vertical alignment (default='center')
+
+        ax : Matplotlib Axes object, optional
+           Draw the graph in the specified Matplotlib axes.
+
+
+        Returns
+        -------
+        dict
+            `dict` of labels keyed on the nodes
+
+        Examples
+        --------
+        >>> G = nx.dodecahedral_graph()
+        >>> labels = nx.draw_networkx_labels(G, pos=nx.spring_layout(G))
+
+        Also see the NetworkX drawing examples at
+        https://networkx.github.io/documentation/latest/auto_examples/index.html
+
+        See Also
+        --------
+        draw()
+        draw_networkx()
+        draw_networkx_nodes()
+        draw_networkx_edges()
+        draw_networkx_edge_labels()
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as e:
+            raise ImportError("Matplotlib required for draw()") from e
+        except RuntimeError:
+            print("Matplotlib unable to open display")
+            raise
+
+        if ax is None:
+            ax = plt.gca()
+
+        if labels is None:
+            labels = {n: n for n in G.nodes()}
+
+        text_items = {}  # there is no text collection so we'll fake one
+        for n, label in labels.items():
+            (x, y) = pos[n]
+            if not isinstance(label, str):
+                label = str(label)  # this makes "1" and 1 labeled the same
+            t = ax.text(
+                x,
+                y,
+                label,
+                size=font_size,
+                color=font_color,
+                family=font_family,
+                weight=font_weight,
+                alpha=alpha,
+                horizontalalignment=horizontalalignment,
+                verticalalignment=verticalalignment,
+                transform=ax.transData,
+                bbox=bbox,
+                clip_on=True,
+                wrap=True
+            )
+            text_items[n] = t
+
+        ax.tick_params(
+            axis="both",
+            which="both",
+            bottom=False,
+            left=False,
+            labelbottom=False,
+            labelleft=False,
+        )
+
+        return text_items
     def draw(self, figsize=(6.4, 4.8), dpi=300, rule_font_size=12, model_font_size=10):
         # 1. Figure out node positions using igraph
         print(f"Drawing graph with {len(self._ng)} nodes.")
         pos = self.make_node_positions()
-        fig = plt.figure(dpi=dpi, figsize=figsize, constrained_layout=True)
+        fig = plt.figure(dpi=dpi, constrained_layout=True)
         specs = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1, 2])
         ax1 = fig.add_subplot(specs[0, 0])
-        ax2 = fig.add_subplot(specs[0, 1])
+        ax2 = fig.add_subplot(specs[0, 1], sharey=ax1)
 
         normal_edge_list, constraint_edge_list = self.split_into_edge_lists(self._ng)
 
@@ -302,7 +441,7 @@ class NetworkxDisplay():
         constraint_labels, edge_labels, node_labels, recursive_labels, choice_labels, stable_labels, constraint_rule_labels = self.make_labels()
 
         plotted_nodes = {}
-        x = nx.draw_networkx_labels(self._ng, pos,
+        x = self.draw_networkx_labels(self._ng, pos,
                                     font_size=model_font_size,
                                     ax=ax2,
                                     bbox={'facecolor': 'dodgerblue',
@@ -311,7 +450,7 @@ class NetworkxDisplay():
                                           'pad': 1},
                                     labels=node_labels)
         plotted_nodes.update(x)
-        x = nx.draw_networkx_labels(self._ng, pos,
+        x = self.draw_networkx_labels(self._ng, pos,
                                     font_size=model_font_size,
                                     ax=ax2,
                                     font_color='white',
@@ -322,7 +461,7 @@ class NetworkxDisplay():
                                           'pad': 1},
                                     labels=constraint_labels)
         plotted_nodes.update(x)
-        x = nx.draw_networkx_labels(self._ng, pos,
+        x = self.draw_networkx_labels(self._ng, pos,
                                     font_size=model_font_size,
                                     ax=ax2,
                                     font_color='black',
@@ -358,54 +497,66 @@ class NetworkxDisplay():
         self.remove_clutter_from_axis(ax2)
         self.draw_lines_at_rule_boarders(ax1, ax2, fig, rule_positions)
 
-        self.draw_box_around_everything(ax1, ax2, fig)
+        fig.set_size_inches(figsize[0], figsize[1], forward=True)
+
+        ax1.apply_aspect()
+        ax2.apply_aspect()
+
+        fig.tight_layout()
+        #self.draw_box_around_everything(ax1, ax2, fig)
+
+        # plt.axis('scaled')
+        #plt.draw()
+        adjust_figure_size(plotted_nodes, fig)
         return fig
 
-    def draw_rule_delimiters(self, x1, x2, ax1, ax2, **kwargs):
+    def draw_rule_delimiters(self, y, ax1, ax2, min_x1, max_x1, min_x2, max_x2, **kwargs):
         axis_to_data = ax1.transAxes + ax1.transData.inverted()
         ax1_data_to_axis = axis_to_data.inverted()
-        axis_to_data = ax2.transAxes + ax1.transData.inverted()
+        axis_to_data = ax2.transAxes + ax2.transData.inverted()
         ax2_data_to_axis = axis_to_data.inverted()
-        x1 = ax1_data_to_axis.transform(x1)
-        x2 = ax2_data_to_axis.transform(x2)
-
-        x1 = x1[1]
-        x2 = x2[1]
-        ax1.plot([1, 1], [x2, x2],
+        y1 = ax1_data_to_axis.transform(y)[1]
+        y2 = ax2_data_to_axis.transform(y)[1]
+        ax1.plot([min_x1, max_x1], [y1, y1],
                  transform=ax1.get_xaxis_transform(), **kwargs)
-        ax2.plot([1, 1], [x2, x2],
+        ax2.plot([min_x2, max_x2], [y2, y2],
                  transform=ax2.get_xaxis_transform(), **kwargs)
-        for y in (x1, x2):
-            p = ConnectionPatch((1, y), (0, y),
-                                coordsA=ax2.get_xaxis_transform(),
-                                coordsB=ax1.get_xaxis_transform(), **kwargs)
 
-            ax1.add_artist(p)
+        p = ConnectionPatch((max_x1, y1), (min_x2, y2),
+                                coordsA=ax1.get_xaxis_transform(),
+                                coordsB=ax2.get_xaxis_transform(), **kwargs)
+
+        ax1.add_artist(p)
 
     def draw_lines_at_rule_boarders(self, ax1, ax2, fig, pos):
         pos_as_list = list(pos.values())
         spans = [((x1, y1), (x2, y2)) for (x1, y1), (x2, y2) in zip(pos_as_list, pos_as_list[1:])]
-        for y1, y2 in spans:
-            self.draw_rule_delimiters(y1, y2, ax1, ax2, color="grey", linewidth=.5, zorder=0)
+        min_x1, max_x1 = ax1.get_xlim()
+        min_x2, max_x2 = ax2.get_xlim()
+        for rule_position in pos_as_list:
+            self.draw_rule_delimiters(rule_position, ax1, ax2, min_x1, max_x1, min_x2, max_x2,linewidth=1, zorder=0, color='grey')
 
     def draw_box_around_everything(self, ax1, ax2, fig):
         ax2_bounds = ax2.get_tightbbox(renderer=fig.canvas.get_renderer()).extents
         ax2_bounds = ax2.transData.inverted().transform(ax2_bounds)
-        x1, x2 = (0, ax2_bounds[1]), (0, ax2_bounds[3])
+        ax1_bounds = ax1.get_tightbbox(renderer=fig.canvas.get_renderer()).extents
+        ax1_bounds = ax1.transData.inverted().transform(ax1_bounds)
+        x1, x2 = (0, ax1_bounds[1]), (0, ax1_bounds[3]+ax2_bounds[3])
 
         axis_to_data = ax1.transAxes + ax1.transData.inverted()
         ax1_data_to_axis = axis_to_data.inverted()
-        axis_to_data = ax2.transAxes + ax1.transData.inverted()
+        axis_to_data = ax2.transAxes + ax2.transData.inverted()
         ax2_data_to_axis = axis_to_data.inverted()
         x1 = ax1_data_to_axis.transform(x1)
         x2 = ax2_data_to_axis.transform(x2)
 
+        #
         x1 = x1[1]
         x2 = x2[1]
         ax1.plot([1, 0, 0, 1], [x1, x1, x2, x2],
-                 transform=ax1.get_xaxis_transform(), color="k", linewidth=2, zorder=0)
-        ax2.plot([0, 1, 1, 0], [x2, x2, x1, x1],
-                 transform=ax2.get_xaxis_transform(), color="k", linewidth=2, zorder=0)
+                transform=ax1.get_xaxis_transform(), color="k", linewidth=2, zorder=0)
+        ax2.plot([0, 2, 2, 0], [x2, x2, x1, x1],
+                transform=ax2.get_xaxis_transform(), color="k", linewidth=2, zorder=0)
         for y in (x1, x2):
             p = ConnectionPatch((1, y), (0, y),
                                 coordsA=ax2.get_xaxis_transform(),

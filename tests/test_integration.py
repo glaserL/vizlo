@@ -163,11 +163,13 @@ def testy_test():
  :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
  """
 
-    #prg = "a. b :- a. {c}. d :- c. {f} :- d. "(6.4, 4.8)
-    ctl.add("base", [], queens)
+    prg = "a. b :- a. {c}. d :- c. {f} :- d. "
+    prg = "a. {b}."
+    prg = "x(0..5). {y(Y)} :- x(Y)."
+    ctl.add("base", [], prg)
     #ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
     #ctl.paint()
-    ctl.paint(figsize=(30,5), dpi=200, model_font_size=5)
+    ctl.paint( dpi=200, rule_font_size = 30)
     plt.show()
 
 def test_make_documentation_img():
