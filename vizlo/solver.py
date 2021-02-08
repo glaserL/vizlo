@@ -6,6 +6,7 @@ import networkx as nx
 from clingo import Control, Symbol
 
 from vizlo.types import ASTRuleSet, FlatASTProgram, ASTProgram
+from vizlo.util import log
 
 EMERGENCY_EXIT_COUNTER = 0
 
@@ -82,12 +83,12 @@ class SolveWorker:
     def run(self, i):
         # analytically find recursive components and add them at once
         partial_models = self.main.find_active_nodes_at_time_step(i)
-        print(f"{self.rule} with {len(partial_models)} previous partial models.")
+        log(f"{self.rule} with {len(partial_models)} previous partial models.")
         for partial_model in partial_models:
             # print(f"Continuing with {partial_model}")
             assumptions = self._create_true_symbols_from_solver_state(partial_model)
             assumptions.extend(self.fixed_assumptions)
-            print(f"Assumptions: {assumptions}, model: {partial_model}")
+            log(f"Assumptions: {assumptions}, model: {partial_model}")
             new_partial_models = self._get_new_partial_models(assumptions, self.ctl, i)
             _consolidate_new_solver_states(assumptions, new_partial_models)
             self.main.update_graph(partial_model, self.rule, new_partial_models)
@@ -100,15 +101,13 @@ class SolveWorker:
                 model = set(m.symbols(atoms=True))
                 adds = model - get_all_trues_from_assumption(assumptions)
                 syms = SolverState(m.symbols(atoms=True), True, i + 1, adds=adds)
-                print(f"{assumptions} yielded {syms}")
                 solver_states_to_create.append(syms)
                 hacky_counter += 1
             if hacky_counter == 0:
                 # HACK: This means the candidate model became conflicting.
-                print(f"Unsatisfiable partial model {assumptions} at step {i}.")
                 solver_states_to_create.append(SolverState(set(), False, i + 1))
-            handle.wait()  # TODO: Necessary??
-            result = handle.get()
+            handle.wait()
+            handle.get()
         return solver_states_to_create
 
     def _create_true_symbols_from_solver_state(self, s):
@@ -116,7 +115,6 @@ class SolveWorker:
         for true in s.model:
             syms.append((true, True))
         for false in s.falses:
-            print(f"Sigs: {self.singatures_in_heads}")
             if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
                 syms.append((false, False))
         syms.extend(self.fixed_assumptions)
@@ -127,7 +125,6 @@ def _update_falses_in_solver_states(sss):
     all_possible = set()
     for s in sss:
         all_possible.update(s.model)
-    print(f"All atoms that have been added in this time step: {all_possible}")
     for s in sss:
         falses = all_possible - set(s.model)
         s.falses = falses
@@ -136,7 +133,6 @@ def _update_falses_in_solver_states(sss):
 def _assert_falses_from_assumptions(syms: List[SolverState], assumpts):
     for sym in syms:
         for atom, value in assumpts:
-            print(f"Updating {sym} with {atom}={value}")
             if not value:
                 sym.falses.add(atom)
 
@@ -148,7 +144,6 @@ def _consolidate_new_solver_states(assumpts, solver_states_to_create):
 
 def _make_new_control_and_ground(current_prg: FlatASTProgram) -> Control:
     prg_as_str = " ".join([str(rule) for rule in current_prg])
-    print(f"Creating Control for \'{prg_as_str}\'")
     ctl = clingo.Control(["0"])
     ctl.add("base", [], prg_as_str)
     ctl.ground([("base", [])])
@@ -166,8 +161,7 @@ class SolveRunner:
             symbols_in_heads_map = dict()
         self.prg: ASTProgram = program
         self.global_assumptions = global_assumptions if global_assumptions is not None else set()
-        print(
-            f"Created AnotherOne with {len(self.prg)} rules, {symbols_in_heads_map} signatures and {len(self.global_assumptions)} global assumptions")
+        log(f"Created AnotherOne with {len(self.prg)} rules, {symbols_in_heads_map} signatures and {len(self.global_assumptions)} global assumptions")
 
         self._g: nx.Graph = nx.DiGraph()
         self._g.add_node(INITIAL_EMPTY_SET)

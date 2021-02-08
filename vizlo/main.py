@@ -1,5 +1,5 @@
 from clingo import Control, Symbol, Model, SolveHandle, SolveResult
-from vizlo.transform import JustTheRulesTransformer, transform
+from vizlo.transform import JustTheRulesTransformer
 from vizlo.graph import NetworkxDisplay
 from vizlo.solver import SolveRunner, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection, Dict
@@ -8,6 +8,7 @@ import networkx as nx
 
 # Types
 from vizlo.types import Program, ASTProgram
+from vizlo.util import log
 
 
 def program_to_string(program: Program) -> str:
@@ -38,7 +39,7 @@ def get_ground_universe(program: Program) -> Set[Symbol]:
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
     ground_universe = set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
-    print(f"Ground universe: {ground_universe}")
+    log(f"Ground universe: {ground_universe}")
     return ground_universe
 
 
@@ -50,10 +51,10 @@ def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonMode
     true_symbols: Set[Symbol] = set()
     for model in models:
         true_symbols.update(model.model)
-    print(f"Global truths: {true_symbols}")
+    log(f"Global truths: {true_symbols}")
     global_assumptions = set(((symbol, False) for symbol in universe if not symbol in true_symbols))
     global_assumptions.update(set(((symbol, True) for symbol in universe if symbol in true_symbols)))
-    print(f"Global assumptions: {global_assumptions}")
+    log(f"Global assumptions: {global_assumptions}")
     return global_assumptions
 
 
@@ -96,9 +97,9 @@ class VizloControl(Control):
         correspoding_nodes = set()
         for model in stable_models:
             for node in g.nodes():
-                print(f"{node} {type(node.model)} == {model} {type(model)} -> {set(node.model) == model}")
+                log(f"{node} {type(node.model)} == {model} {type(model)} -> {set(node.model) == model}")
                 if set(node.model) == model and len(g.edges(node)) == 0:  # This is a leaf
-                    print(f"{node} <-> {model}")
+                    log(f"{node} <-> {model}")
                     correspoding_nodes.add(node)
                     break
         return correspoding_nodes
@@ -108,13 +109,12 @@ class VizloControl(Control):
         relevant_nodes = set()
         for model in models_as_nodes:
             for relevant_node in nx.all_simple_paths(graph, INITIAL_EMPTY_SET, model):
-                print(f"???{relevant_node}")
                 relevant_nodes.update(relevant_node)
         all_nodes = set(graph.nodes())
         irrelevant_nodes = all_nodes - relevant_nodes
         graph.remove_nodes_from(irrelevant_nodes)
         after = len(graph)
-        print(f"Removed {before - after} of {before} nodes ({(before - after) / before})")
+        log(f"Removed {before - after} of {before} nodes ({(before - after) / before})")
 
     def _make_graph(self, _sort=True):
         """
@@ -138,9 +138,9 @@ class VizloControl(Control):
         g = solve_runner.make_graph()
         return g
 
-    def paint(self, atom_draw_maximum=20, print_entire_models=False, sort_program=True, **kwargs):
+    def paint(self, atom_draw_maximum=20, show_entire_model=False, sort_program=True, **kwargs):
         g = self._make_graph(sort_program)
-        display = NetworkxDisplay(g, atom_draw_maximum, not print_entire_models)
+        display = NetworkxDisplay(g, atom_draw_maximum, not show_entire_model)
         img = display.draw(**kwargs)
         return img
 
@@ -148,32 +148,3 @@ class VizloControl(Control):
         """Short cut for complex add and ground calls, should only be used for debugging purposes."""
         self.add("base", [], prg)
         self.ground([("base", [])])
-
-
-def _main():
-    prg = "a. {b} :- a."
-    ctl = VizloControl()
-    ctl.add("base", [], prg)
-    x = ctl.paint()
-
-    plt.imshow(x)
-    plt.show()
-    #
-    # g = ctl.anotherOne.make_graph()
-    # annotate_edges_in_nodes(g, (0, INITIAL_EMPTY_SET))
-    #
-    # app = QApplication(sys.argv)
-    #
-    # layout = QHBoxLayout()
-    # w = PySideDisplay(g)
-    # # QWidget
-    #
-    # # QMainWindow using QWidget as central widget
-    # window = MainWindow(w)
-    #
-    # window.show()
-    # sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    _main()

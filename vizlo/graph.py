@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mp
 
 from vizlo.solver import SolverState
+from vizlo.util import log
 
 NODE_SIZE = 0
 
@@ -127,7 +128,7 @@ class NetworkxDisplay:
         self._print_changes_only = print_changes_only
         self.max_depth = max(n.step for n in self._ng.nodes())
         self._ig: igraph.Graph = self.nxgraph_to_igraph(self._ng)
-        print(f"Initialized {self.__class__}")
+        log(f"Initialized {self.__class__}")
 
     def model_to_string(self, model: Collection):
         if self.atom_draw_maximum <= 0:
@@ -214,9 +215,9 @@ class NetworkxDisplay:
 
     def draw(self, figsize=None, dpi=300, rule_font_size=12, model_font_size=10):
         # 1. Figure out node positions using igraph
-        print(f"Drawing graph with {len(self._ng)} nodes.")
+        log(f"Drawing graph with {len(self._ng)} nodes.")
         pos = self.make_node_positions()
-        fig = plt.figure(dpi=dpi, constrained_layout=True)
+        fig = plt.figure(dpi=dpi)
         specs = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1, 2])
         rule_axis = fig.add_subplot(specs[0, 0])
         graph_axis = fig.add_subplot(specs[0, 1], sharey=rule_axis)

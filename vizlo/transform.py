@@ -6,6 +6,7 @@ from clingo import ast
 from typing import List, Dict, Tuple
 
 from vizlo.types import ASTRuleSet, ASTProgram, Program, RuleSet
+from vizlo.util import log
 
 
 def make_signature(function: clingo.ast.Function) -> Tuple[str, int]:
@@ -132,7 +133,7 @@ class JustTheRulesTransformer(Transformer):
         return rules
 
     def sort_program_by_dependencies(self, parse: ASTRuleSet) -> Program:
-        print(f"Parse: {parse} ({len(parse)})")
+        log(f"Parse: {parse} ({len(parse)})")
         deps = make_dependency_graph(parse, self._head_signature2rule, self._body_signature2rule)
         deps = merge_cycles(deps)
         deps = remove_loops(deps)
@@ -189,10 +190,9 @@ def merge_nodes(nodes: frozenset) -> frozenset:
 def merge_cycles(g: nx.Graph) -> nx.Graph:
     mapping = {}
     for cycle in nx.algorithms.components.strongly_connected_components(g):
-        print(f"Cycle: {cycle}")
+        log(f"Cycle: {cycle}")
         merge_node = merge_nodes(cycle)
         mapping.update({old_node: merge_node for old_node in cycle})
-    print(mapping)
     return nx.relabel_nodes(g, mapping)
 
 

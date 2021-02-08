@@ -22,7 +22,7 @@ def test_parameters_exist():
     debuggo = VizloControl()
     debuggo.add("base", [], "a.")
     debuggo.paint(atom_draw_maximum=True)
-    debuggo.paint(print_entire_models=False)
+    debuggo.paint(show_entire_model=False)
     debuggo.paint(sort_program=False)
     debuggo.paint(figsize=(3, 4))
     debuggo.paint(model_font_size=23)
@@ -79,6 +79,23 @@ def test_print_only_specific_model_complete_definition():
     assert len(nodes) == 3
     assert len(nodes[0].model) == 0
     assert len(nodes[2].model) == 2
+
+
+def test_painter_doesnt_print_constraint_models():
+    ctl = VizloControl(["0"])
+    ctl.add("base", [], "{a}. {b}. :- a.")
+    ctl.ground([("base", [])])
+    g1 = ctl._make_graph()
+    with ctl.solve(yield_=True) as handle:
+        for m in handle:
+            if m.contains(clingo.Function("b",[])):
+                ctl.add_to_painter(m)
+
+    g2 = ctl._make_graph()
+    assert len(g2) > 1 and len(g1) > 1, "Using painter should not make everything invalid."
+    assert len(g2) != len(g1), "Adding clingo models to painter should have an effect."
+    ctl.paint()
+    plt.show()
 
 
 def test_adding_clingo_models_to_painter():
@@ -160,7 +177,7 @@ def test_make_documentation_img():
     ctl = VizloControl(["0"])
     prg = "{a}. :- a. {b}."
     ctl.add("base", [], prg)
-    ctl.paint(dpi=300, print_entire_models=True)
+    ctl.paint(show_entire_model=True, dpi=300)
     # plt.show()
     plt.savefig("../docs/img/sample.png", dpi=300)
 
@@ -169,9 +186,8 @@ def testy_test():
     prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
     #prg = "a(1). {a(X)} :- b(X-1), X < 10. b(X) :- a(X)."
     ctl.add("base", [], prg)
-    ctl.paint(dpi=300, print_entire_models=True)
+    ctl.paint(show_entire_model=True, dpi=300)
     #plt.show()
-
 
 def test_pretty_import():
     from vizlo import VizloControl

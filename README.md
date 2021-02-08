@@ -20,14 +20,9 @@ Debuggo wraps itself around the Control object of the clingo python API. We assu
 import vizlo
 import matplotlib.pyplot as plt
 
-ctl = vizlo.VizloControl()
+ctl = vizlo.VizloControl(["0"])
 ctl.add("base", [], "{a}. {b}. :- a.")
 ctl.ground([("base", [])])
-with ctl.solve(yield_=True) as handle:
-    for m in handle:
-        if len(m) > 1:
-            ctl.add_to_painter(m)
-
 ctl.paint()
 plt.show()
 ```
