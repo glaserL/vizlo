@@ -1,6 +1,5 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import numpy as np
 
 from vizlo.solver import SolverState
 from vizlo.graph import NetworkxDisplay
@@ -139,53 +138,7 @@ def test_returns_printable_array():
     result = display.draw()
     assert result is not None, "display.draw() should return a result."
     assert isinstance(result, plt.Figure), "display.draw() should return a plottable array."
-
-
-def test_branching_graph():
-    g = create_diGraph_with_single_branch()
-    display = NetworkxDisplay(g, False)
-    pic = display.draw()
-
-
-def test_nx_viz():
-    g = create_diGraph_with_single_branch()
-    display = NetworkxDisplay(g, False)
-    display.draw()
-
-
-def test_nx_viz_multiple_branches():
-    g, _ = create_diGraph_with_multiple_branchoffs()
-    display = NetworkxDisplay(g, False)
-    display.draw()
-
-
-def test_nx_viz_converges_again():
-    g, _ = create_diGraph_not_a_tree()
-    display = NetworkxDisplay(g, False)
-    display.draw()
-
-# Requirement: a recursive subprogram requires to have a CIRCLE
-# of dependencies. As soon as there are more than one path from any node to
-# any other, the program fails.
-
-def test_test():
-    g = nx.DiGraph()
-    g.add_edge(1, 2)
-    g.add_edge(2, 3)
-    g.add_edge(3, 4)
-    g.add_edge(4, 5)
-    g.add_edge(5, 6)
-    g.nodes[1]["rule"] = 1
-    g.nodes[2]["rule"] = 2
-    g.nodes[3]["rule"] = 1
-    g.nodes[4]["rule"] = 2
-    g.nodes[5]["rule"] = 3
-    g.nodes[6]["rule"] = 3
-
-    pos = nx.multipartite_layout(g, "rule")
-    print(f"???{pos}")
-#    plt.clf()
-#    nx.draw(g, pos, with_labels=True)
+    del g
 
 
 def test_only_new_models_are_shown():
@@ -213,12 +166,12 @@ def test_print_empty_graph():
 def test_max_model_size_parameter():
     for maximum in [0, 1, 5, 20, 25]:
         g = nx.DiGraph()
-        a = SolverState(set(str(x) for x in range(60)), 0, True)
-        b = SolverState(set(str(x) for x in range(60)), 1, True)
+        a = SolverState(set(str(x) for x in range(30)), 0, True)
+        b = SolverState(set(str(x) for x in range(30)), 1, True)
         g.add_edge(a, b, rule="Wow")
         display = NetworkxDisplay(g, atom_draw_maximum=maximum, print_changes_only=False)
-        display.draw()
         normal_models, recursive_models, constraint_models, stable_models, rule_labels = display.make_labels()
         all_node_labels = list(set().union(*[normal_models.values(), recursive_models.values(), constraint_models.values(), stable_models.values()]))
         maximum_label_length = max((len(model.split()) for model in all_node_labels))
         assert maximum_label_length <= maximum, "display should only print <= maximum atoms."
+        del g
