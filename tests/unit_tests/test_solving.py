@@ -1,8 +1,7 @@
-import pytest
+import networkx as nx
+from clingo import Control
 
 from vizlo import solver, transform
-from clingo import Control
-import networkx as nx
 
 
 def get_transformed_test_program():
@@ -55,6 +54,7 @@ def test_long_distance_branching():
     for i, l in enumerate(lengths):
         assert len(nodes[i].model) == l
 
+
 def test_correctly_detect_unsats():
     prg = [["{b}."], [":- b."]]
     slv = solver.SolveRunner(prg)
@@ -62,6 +62,7 @@ def test_correctly_detect_unsats():
     nx.draw(g, with_labels=True)
 
     assert len(g.nodes) == 5
+
 
 def test_simple_recursive():
     prg = [["a."], ["c :- b.", "b :- c, not a."]]
@@ -80,7 +81,6 @@ def test_recursive_with_choice_before():
     assert len(nodes[2].model) == 1
     assert len(nodes[3].model) == 0
     assert len(nodes[4].model) == 3
-
 
 
 def test_recursive_with_choice_within():
@@ -130,6 +130,7 @@ def test_choice():
     assert len(nodes[0].model) == 0
     assert len(nodes[1].model) == 0
     assert len(nodes[2].model) == 1
+
 
 def test_has_reached_stable_model_function():
     one = solver.SolverState({"A", "B"}, True)

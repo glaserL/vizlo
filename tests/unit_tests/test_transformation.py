@@ -1,6 +1,4 @@
 import clingo
-import networkx as nx
-import matplotlib.pyplot as plt
 
 from vizlo import transform
 from vizlo.transform import make_dependency_graph
@@ -40,7 +38,7 @@ def test_single_circle_within_already_sorted():
     sorted_program = t.transform(prg)
     assert len(sorted_program) == 3
     assert is_str_list_and_ast_list_identical(sorted_program[0], ["a."])
-    assert is_str_list_and_ast_list_identical(sorted_program[1], ["b :- c.", "c :- b.","b :- a."])
+    assert is_str_list_and_ast_list_identical(sorted_program[1], ["b :- c.", "c :- b.", "b :- a."])
     assert is_str_list_and_ast_list_identical(sorted_program[2], ["d :- b."])
 
 
@@ -86,13 +84,13 @@ def test_dependent_choice_rule():
     g = t._deps
     assert len(g) == 2
 
+
 def test_formula_in_rule():
     prg = "x(X) :- y(X), X != 2. y(1..5)."
     sort = transform.transform(prg)
     assert len(sort) == 2
     assert is_str_list_and_ast_list_identical(sort[0], ["y((1..5))."])
     assert is_str_list_and_ast_list_identical(sort[1], ["x(X) :- y(X); X!=2."])
-
 
 
 def test_creation_of_dependency_maps_during_transformation():
@@ -104,11 +102,12 @@ def test_creation_of_dependency_maps_during_transformation():
     bodies = t._body_signature2rule
     assert len(heads) == 4
     assert len(bodies) == 1
-    assert len(heads[("a",0)]) == 1
-    assert len(heads[("f",0)]) == 1
-    assert len(heads[("g",0)]) == 1
-    assert len(heads[("b",0)]) == 2
-    assert len(bodies[("a",0)]) == 2
+    assert len(heads[("a", 0)]) == 1
+    assert len(heads[("f", 0)]) == 1
+    assert len(heads[("g", 0)]) == 1
+    assert len(heads[("b", 0)]) == 2
+    assert len(bodies[("a", 0)]) == 2
+
 
 def test_single_rule_dependency_graph():
     prg = "a."
@@ -116,6 +115,7 @@ def test_single_rule_dependency_graph():
     split = t._split_program_into_rules(prg)
     g = make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
     assert len(g) == 1
+
 
 def test_parameterized_sort():
     prg = "b :- a. a."
@@ -129,6 +129,7 @@ def test_parameterized_sort():
     assert is_str_list_and_ast_list_identical(sorted[0], ["a."])
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
 
+
 def test_sort_with_variables():
     prg = "x(X) :- y(X). y(X) :- z(X). z(1..3)."
     sorted = transform.transform(prg)
@@ -137,13 +138,15 @@ def test_sort_with_variables():
     assert is_str_list_and_ast_list_identical(sorted[1], ["y(X) :- z(X)."])
     assert is_str_list_and_ast_list_identical(sorted[2], ["x(X) :- y(X)."])
 
+
 def test_transformation_with_choice_on_variables():
     prg = "a((1..15)). { b(X) :  } :- a(X)."
     t = transform.JustTheRulesTransformer()
     sorted = t.transform(prg)
-    g = make_dependency_graph(sorted, t._head_signature2rule,t._body_signature2rule)
+    g = make_dependency_graph(sorted, t._head_signature2rule, t._body_signature2rule)
     assert len(g) == 2
     assert len(sorted) == 2
+
 
 def test_transform_choice_in_beginning():
     queens = "{a}. b :- a. c :- b."
@@ -153,10 +156,12 @@ def test_transform_choice_in_beginning():
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
     assert is_str_list_and_ast_list_identical(sorted[2], ["c :- b."])
 
+
 def test_group_based_on_heads():
     prg = "{a; b}. a :- b."
     transformed = transform.transform(prg)
     assert len(transformed) == 1
+
 
 def test_transform_without_instanciation():
     prg = "b :- a. a."

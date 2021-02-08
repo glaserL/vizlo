@@ -1,3 +1,4 @@
+import clingo
 from clingo import Control, Symbol, Model, SolveHandle, SolveResult
 from vizlo.transform import JustTheRulesTransformer
 from vizlo.graph import NetworkxDisplay
@@ -60,7 +61,7 @@ def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonMode
 
 class VizloControl(Control):
 
-    def add_to_painter(self, model: Union[Model, PythonModel]):
+    def add_to_painter(self, model: Union[Model, PythonModel, Collection[clingo.Symbol]]):
         self.painter.append(PythonModel(model))
 
     def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20, print_entire_models=False,

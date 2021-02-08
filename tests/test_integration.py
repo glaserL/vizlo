@@ -1,16 +1,11 @@
 import time
 
 import clingo
-import numpy as np
-import networkx as nx
 import pytest
 
-from vizlo import solver, graph
 from vizlo.graph import NetworkxDisplay
 from vizlo.main import VizloControl, PythonModel
 import matplotlib.pyplot as plt
-
-from vizlo.solver import SolveRunner
 
 
 def test_instanciations():
@@ -88,13 +83,12 @@ def test_painter_doesnt_print_constraint_models():
     g1 = ctl._make_graph()
     with ctl.solve(yield_=True) as handle:
         for m in handle:
-            if m.contains(clingo.Function("b",[])):
+            if m.contains(clingo.Function("b", [])):
                 ctl.add_to_painter(m)
 
     g2 = ctl._make_graph()
     assert len(g2) > 1 and len(g1) > 1, "Using painter should not make everything invalid."
     assert len(g2) != len(g1), "Adding clingo models to painter should have an effect."
-
 
 
 def test_adding_clingo_models_to_painter():
@@ -180,12 +174,13 @@ def test_make_documentation_img():
     ctl.paint(show_entire_model=True, dpi=300)
     plt.savefig("../docs/img/sample.png", dpi=300)
 
+
 def testy_test():
     ctl = VizloControl(["0"])
     prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
-    #prg = "a(1). {a(X)} :- b(X-1), X < 10. b(X) :- a(X)."
     ctl.add("base", [], prg)
     ctl.paint(show_entire_model=True, dpi=300)
+
 
 def test_pretty_import():
     from vizlo import VizloControl

@@ -105,13 +105,6 @@ def create_diGraph_not_a_tree():
     g.nodes(data=True)
     return g, empty
 
-def create_diGraph_with_all_node_types():
-    g = nx.DiGraph()
-    empty = SolverState(set(), True, 0)
-    a = SolverState(set(), True, 1)
-    b = SolverState({"b"}, True, 2)
-    c = SolverState(set(), True, 1)
-    d = SolverState(set(), False, 2)
 
 def test_drawing_unsat_and_empty_look_different():
     g = create_branching_diGraph_with_unsat()
@@ -138,7 +131,6 @@ def test_returns_printable_array():
     result = display.draw()
     assert result is not None, "display.draw() should return a result."
     assert isinstance(result, plt.Figure), "display.draw() should return a plottable array."
-    del g
 
 
 def test_only_new_models_are_shown():
