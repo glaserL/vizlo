@@ -135,7 +135,7 @@ class JustTheRulesTransformer(Transformer):
         print(f"Parse: {parse} ({len(parse)})")
         deps = make_dependency_graph(parse, self._head_signature2rule, self._body_signature2rule)
         deps = merge_cycles(deps)
-        deps = remove_eigenkanten(deps)
+        deps = remove_loops(deps)
         self._deps = deps  # for debugging purposes
         program = list(nx.topological_sort(deps))
         return program
@@ -196,7 +196,7 @@ def merge_cycles(g: nx.Graph) -> nx.Graph:
     return nx.relabel_nodes(g, mapping)
 
 
-def remove_eigenkanten(g: nx.Graph) -> nx.Graph:
+def remove_loops(g: nx.Graph) -> nx.Graph:
     remove_edges = []
     for edge in g.edges:
         u, v = edge

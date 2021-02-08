@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from vizlo.solver import SolverState
-from vizlo.graph import NetworkxDisplay, get_width_and_height_of_text_label
+from vizlo.graph import NetworkxDisplay
 
 
 def create_simple_diGraph():
@@ -118,11 +118,11 @@ def test_drawing_unsat_and_empty_look_different():
     g = create_branching_diGraph_with_unsat()
     assert len(g) == 10
     display = NetworkxDisplay(g, False)
-    constraint_labels, edge_labels, node_labels, _, _, _,_ = display.make_labels()
-    assert len(constraint_labels) == 1
-    assert list(constraint_labels.keys())[0] == SolverState(set(), False, 4)
-    assert len(edge_labels) == 5
-    assert len(node_labels) == 7
+    normal_models, recursive_models, constraint_models, stable_models, rule_labels = display.make_labels()
+    assert len(constraint_models) == 1
+    assert list(constraint_models.keys())[0] == SolverState(set(), False, 4)
+    assert len(normal_models) == 6
+    assert len(rule_labels) == 7
 
 
 
@@ -188,18 +188,12 @@ def test_test():
 #    nx.draw(g, pos, with_labels=True)
 
 
-def test_get_viz_size():
-    width, height = get_width_and_height_of_text_label("test")
-    assert width > 0
-    assert height > 0
-    assert width > height
-
 def test_only_new_models_are_shown():
     g = create_branching_diGraph_with_unsat()
     display = NetworkxDisplay(g)
-    constraint_labels, edge_labels, node_labels, recursive_labels, _, _,_ = display.make_labels()
+    normal_models, recursive_models, constraint_models, stable_models, rule_labels = display.make_labels()
 
-    for node, label in node_labels.items():
+    for node, label in normal_models.items():
         label = set() if label == "\u2205" else set(label.split())
         if node.step != 4:
             assert node.adds == label, "inner nodes should only represent partial models."
@@ -207,9 +201,9 @@ def test_only_new_models_are_shown():
             assert node.model == label, "The last node should represent the stable model."
 
     display = NetworkxDisplay(g, print_changes_only=False)
-    constraint_labels, edge_labels, node_labels, recursive_labels, _, _, _ = display.make_labels()
+    normal_models, recursive_models, constraint_models, stable_models, rule_labels = display.make_labels()
 
-    for node, label in node_labels.items():
+    for node, label in normal_models.items():
         label = set() if label == "\u2205" else set(label.split())
         assert node.model == label, "inner nodes should only represent partial models."
 
@@ -219,15 +213,12 @@ def test_print_empty_graph():
 def test_max_model_size_parameter():
     for maximum in [0, 1, 5, 20, 25]:
         g = nx.DiGraph()
-        a = SolverState(set(str(x) for x in range(40)), 0, True)
-        b = SolverState(set(str(x) for x in range(40)), 1, True)
+        a = SolverState(set(str(x) for x in range(60)), 0, True)
+        b = SolverState(set(str(x) for x in range(60)), 1, True)
         g.add_edge(a, b, rule="Wow")
         display = NetworkxDisplay(g, atom_draw_maximum=maximum, print_changes_only=False)
         display.draw()
-        constraint_labels, edge_labels, node_labels, recursive_labels, _, _, _ = display.make_labels()
-        print(node_labels)
-        print(constraint_labels)
-        print(edge_labels)
-        print(recursive_labels)
-        label_length = len(list(node_labels.values())[0].split())
-        assert label_length <= maximum, "display should only print <= maximum atoms."
+        normal_models, recursive_models, constraint_models, stable_models, rule_labels = display.make_labels()
+        all_node_labels = list(set().union(*[normal_models.values(), recursive_models.values(), constraint_models.values(), stable_models.values()]))
+        maximum_label_length = max((len(model.split()) for model in all_node_labels))
+        assert maximum_label_length <= maximum, "display should only print <= maximum atoms."

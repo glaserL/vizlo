@@ -1,3 +1,5 @@
-clingo>=5.0
+clingo>=5.4
 networkx>=2.4
 matplotlib>=3.2
+pytest~=6.2.1
+numpy~=1.19.2

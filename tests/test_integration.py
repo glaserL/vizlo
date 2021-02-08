@@ -24,18 +24,16 @@ def test_parameters_exist():
     debuggo.paint(atom_draw_maximum=True)
     debuggo.paint(print_entire_models=False)
     debuggo.paint(sort_program=False)
-    debuggo.paint(figsize=(3,4))
+    debuggo.paint(figsize=(3, 4))
     debuggo.paint(model_font_size=23)
     debuggo.paint(rule_font_size=13)
     debuggo.paint(dpi=100)
+
 
 def test_empty_program_raises_value_error():
     debuggo = VizloControl()
     with pytest.raises(ValueError):
         debuggo.paint()
-
-def test_paint_without_program_doesnt_throw():
-    pass
 
 
 def test_inherits_control_methods():
@@ -77,23 +75,37 @@ def test_print_only_specific_model_complete_definition():
     ctl.add_to_painter(interesting_model)
 
     g = ctl._make_graph()
-    nx.draw(g, with_labels=True)
-    plt.show()
     nodes = list(g.nodes)
     assert len(nodes) == 3
     assert len(nodes[0].model) == 0
     assert len(nodes[2].model) == 2
 
 
-def test_adding_model_to_painter():
-    ctl = VizloControl()
-    prg = "{a}. b :- a."
+def test_adding_clingo_models_to_painter():
+    prg = "a(1..3). {b(X)} :- a(X)."
+    ctl = VizloControl(["0"])
     ctl.add("base", [], prg)
     ctl.ground([("base", [])])
+    g1 = ctl._make_graph()
     with ctl.solve(yield_=True) as handle:
-        for model in handle:
-            ctl.add_to_painter(model)
-    assert len(ctl.painter) > 0, "Models added to the painter should "
+        for m in handle:
+            if m.contains(clingo.Function("b", [clingo.Number(1)])):
+                ctl.add_to_painter(m)
+
+    g2 = ctl._make_graph()
+    assert len(g2) > 1 and len(g1) > 1, "Using painter should not make everything invalid."
+    assert len(g2) != len(g1), "Adding clingo models to painter should have an effect."
+    ctl = VizloControl(["0"])
+    ctl.add("base", [], prg)
+    interesting_model = []
+    for i in range(1, 4):
+        interesting_model.append(clingo.Function("a", [clingo.Number(i)]))
+    interesting_model.append(clingo.Function("b", [clingo.Number(1)]))
+    ctl.add_to_painter(interesting_model)
+
+    g2 = ctl._make_graph()
+    assert len(g2) > 1 and len(g2) > 1, "Using painter should not make everything invalid."
+    assert len(g2) != len(g1), "Adding clingo models to painter should have an effect."
 
 
 def test_dont_repeat_constraints():
@@ -135,6 +147,7 @@ def test_painting_with_adding_rules_during_solving():
     g = ctl._make_graph()
     assert len(g) == 2
 
+
 def test_calling_paint_should_return_a_plottable_figure():
     ctl = VizloControl(["0"])
     ctl.add("base", [], "a.")
@@ -142,43 +155,23 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert result is not None, "Debuggo.paint() should return a result."
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
-def testy_test():
-    # Just for playing around purposes
-    ctl = VizloControl(["0"])
-    long_prg = ""
-    for x in "abcdefghijklmopqrstuvwxyz":
-        long_prg += f"{x}."
-    prg = "{a}. :- not a. b :- c, a. c :- not b. :- c. "
-    queens = """
-     
- % domain
- number(1..4).
-
- % alldifferent
- 1 { q(X,Y) : number(Y) } 1 :- number(X).
- 1 { q(X,Y) : number(X) } 1 :- number(Y).
- % remove conflicting answers
- :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
- :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
- :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
- """
-
-    prg = "a. b :- a. {c}. d :- c. {f} :- d. "
-    prg = "a. {b}."
-    prg = "x(0..5). {y(Y)} :- x(Y)."
-    ctl.add("base", [], prg)
-    #ctl.paint(sort_program=True, print_entire_models=False, dpi=500, model_font_size =6, rule_font_size=14,figsize=(15,5))
-    #ctl.paint()
-    ctl.paint( dpi=200, rule_font_size = 30)
-    plt.show()
 
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
     prg = "{a}. :- a. {b}."
     ctl.add("base", [], prg)
     ctl.paint(dpi=300, print_entire_models=True)
-    #plt.show()
+    # plt.show()
     plt.savefig("../docs/img/sample.png", dpi=300)
+
+def testy_test():
+    ctl = VizloControl(["0"])
+    prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
+    #prg = "a(1). {a(X)} :- b(X-1), X < 10. b(X) :- a(X)."
+    ctl.add("base", [], prg)
+    ctl.paint(dpi=300, print_entire_models=True)
+    #plt.show()
+
 
 def test_pretty_import():
     from vizlo import VizloControl
