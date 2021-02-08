@@ -94,8 +94,7 @@ def test_painter_doesnt_print_constraint_models():
     g2 = ctl._make_graph()
     assert len(g2) > 1 and len(g1) > 1, "Using painter should not make everything invalid."
     assert len(g2) != len(g1), "Adding clingo models to painter should have an effect."
-    ctl.paint()
-    plt.show()
+
 
 
 def test_adding_clingo_models_to_painter():
@@ -173,12 +172,12 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
 
+@pytest.mark.skip
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
     prg = "{a}. :- a. {b}."
     ctl.add("base", [], prg)
     ctl.paint(show_entire_model=True, dpi=300)
-    # plt.show()
     plt.savefig("../docs/img/sample.png", dpi=300)
 
 def testy_test():
@@ -187,7 +186,6 @@ def testy_test():
     #prg = "a(1). {a(X)} :- b(X-1), X < 10. b(X) :- a(X)."
     ctl.add("base", [], prg)
     ctl.paint(show_entire_model=True, dpi=300)
-    #plt.show()
 
 def test_pretty_import():
     from vizlo import VizloControl
