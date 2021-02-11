@@ -140,6 +140,8 @@ class VizloControl(Control):
         return g
 
     def paint(self, atom_draw_maximum=20, show_entire_model=False, sort_program=True, **kwargs):
+        if type(atom_draw_maximum) != int:
+            raise ValueError(f"Argument atom_draw_maximum should be an integer (received {atom_draw_maximum}).")
         g = self._make_graph(sort_program)
         display = NetworkxDisplay(g, atom_draw_maximum, not show_entire_model)
         img = display.draw(**kwargs)

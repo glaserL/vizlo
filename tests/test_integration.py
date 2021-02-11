@@ -185,3 +185,11 @@ def testy_test():
 def test_pretty_import():
     from vizlo import VizloControl
     c = VizloControl()
+
+
+def test_dont_accept_false_as_model_length():
+    ctl = VizloControl(["0"])
+    prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
+    ctl.add("base", [], prg)
+    with pytest.raises(ValueError):
+        ctl.paint(True)
