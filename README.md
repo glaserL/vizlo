@@ -6,10 +6,10 @@ iterative simulation of the solving process.
 
 ## Installation
 
-Vizlo is distributed over pypi:
-```
-pip install vizlo
-```
+Vizlo will be distributed over conda-forge soon. Until then, install like this:
+
+* Make sure you have clingo installed via conda: `conda install -c potassco clingo`
+* Install via pip directly from github: `python -m pip install git+https://github.com/glaserL/vizlo.git`
 
 ## Usage
 Debuggo wraps itself around the Control object of the clingo python API. We assume you are familiar with the 
@@ -41,7 +41,10 @@ atom depends on are merged together into one solving step (one line in the graph
 ![Example Program](docs/img/sample.png "Sample solver tree")
 
 # API
-Vizlo extends the `clingo.Control` object with two functions:
+Vizlo extends the `clingo.Control` object with two functions, `paint` and `add_to_painter`:
+
+`paint(self, atom_draw_maximum=20, show_entire_model=False, sort_program=True, figsize=None, dpi=300, rule_font_size=12, model_font_size=10):`
+
 
 
 
