@@ -4,7 +4,6 @@ from vizlo.transform import JustTheRulesTransformer
 from vizlo.graph import NetworkxDisplay
 from vizlo.solver import SolveRunner, INITIAL_EMPTY_SET
 from typing import List, Tuple, Any, Union, Set, Collection, Dict
-import matplotlib.pyplot as plt
 import networkx as nx
 
 # Types
@@ -61,6 +60,11 @@ def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonMode
 class VizloControl(Control):
 
     def add_to_painter(self, model: Union[Model, PythonModel, Collection[clingo.Symbol]]):
+        """
+        will register model with the internal painter. On all consecutive calls to paint(), this model will be painted.
+        :param model: the model to add to the painter.
+        :return:
+        """
         self.painter.append(PythonModel(model))
 
     def __init__(self, arguments: List[str] = [], logger=None, message_limit: int = 20, print_entire_models=False,

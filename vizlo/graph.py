@@ -214,7 +214,7 @@ class NetworkxDisplay:
         return normal, constraints
 
     def draw(self, figsize: Union[Tuple[float, float], None] = None, dpi: int = 300, rule_font_size: int = 12,
-              model_font_size: int = 10):
+             model_font_size: int = 10):
         """
         Will draw the graph visualization of a logic programs solving.
         :param figsize: Tuple[float, float]
