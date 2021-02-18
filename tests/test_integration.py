@@ -169,12 +169,12 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
 
-@pytest.mark.skip("Only service test to make documentation.")
+#@pytest.mark.skip("Only service test to make documentation.")
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
-    prg = "{a}. :- a. {b}."
+    prg = "{a}. {b}. :- a. "
     ctl.add("base", [], prg)
-    ctl.paint(show_entire_model=True, dpi=300)
+    ctl.paint(show_entire_model=True, sort_program=False, figsize=(5, 3.5), dpi=300)
     plt.savefig("../docs/img/sample.png", dpi=300)
 
 

@@ -141,7 +141,7 @@ class NetworkxDisplay:
         tmp = ""
         for m in atoms_to_draw:
             if len(tmp) >= how_many_per_line:
-                result_str += tmp + "\n"
+                result_str += tmp.strip() + "\n"
                 tmp = ""
             tmp += str(m) + " "
         result_str += tmp.strip()
