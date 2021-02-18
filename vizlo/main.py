@@ -139,7 +139,22 @@ class VizloControl(Control):
         g = solve_runner.make_graph()
         return g
 
-    def paint(self, atom_draw_maximum=20, show_entire_model=False, sort_program=True, **kwargs):
+    def paint(self, atom_draw_maximum: int = 20, show_entire_model: bool = False, sort_program: bool = True, **kwargs):
+        """
+         Will create a graph visualization of the solving process. If models have been added using add_to_painter,
+         only the solving paths that lead to these models will be drawn.
+         :param atom_draw_maximum: int
+             The maximum amount of atoms that will be printed for each partial model. (default=20)
+         :param show_entire_model: bool
+             If false, only the atoms that have been added at a solving step will be printed (up to atom_draw_maximum).
+             If true, all atoms will always be printed (up to atom_draw_maximum). (default=False)
+         :param sort_program:
+             If true, the rules of a program will be sorted and grouped by their dependencies.
+             Each set of rules will contain all rules in which each atom in its heads is contained in a head.
+         :param kwargs:
+             kwargs will be forwarded to the visualisation module. See graph.draw()
+         :return:
+         """
         if type(atom_draw_maximum) != int:
             raise ValueError(f"Argument atom_draw_maximum should be an integer (received {atom_draw_maximum}).")
         g = self._make_graph(sort_program)

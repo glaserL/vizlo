@@ -1,6 +1,6 @@
 import math
 
-from typing import Tuple, Dict, Any, Collection
+from typing import Tuple, Dict, Any, Collection, Union
 from collections import Counter
 import igraph
 import networkx as nx
@@ -213,7 +213,24 @@ class NetworkxDisplay:
                 normal.append(edge)
         return normal, constraints
 
-    def draw(self, figsize=None, dpi=300, rule_font_size=12, model_font_size=10):
+    def draw(self, figsize: Union[Tuple[float, float], None] = None, dpi: int = 300, rule_font_size: int = 12,
+              model_font_size: int = 10):
+        """
+        Will draw the graph visualization of a logic programs solving.
+        :param figsize: Tuple[float, float]
+            The figure size the visualization will be set to. If none, vizlo tries to extrapolate a appropriate one.
+            default=None
+        :param dpi: int
+            The dots per inch ratio for the visualization.
+            default=300
+        :param rule_font_size: int
+            The font size for the rules.
+            default=12
+        :param model_font_size: int
+            The font size for the atoms in the model nodes.
+            default=10
+        :return:
+        """
         # 1. Figure out node positions using igraph
         log(f"Drawing graph with {len(self._ng)} nodes.")
         pos = self.make_node_positions()
