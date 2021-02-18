@@ -48,15 +48,14 @@ def extract_ground_universe_from_control(ctl: Control) -> Set[Symbol]:
     return set([ground_atom.symbol for ground_atom in ctl.symbolic_atoms])
 
 
-def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonModel]) -> Set[Tuple[Symbol, bool]]:
-    true_symbols: Set[Symbol] = set()
+def make_global_assumptions(universe: Set[Symbol], models: Collection[PythonModel]) -> List[Set[Tuple[Symbol, bool]]]:
+    assumption_sets: List[Set[Tuple[Symbol, bool]]] = []
     for model in models:
-        true_symbols.update(model.model)
-    log(f"Global truths: {true_symbols}")
-    global_assumptions = set(((symbol, False) for symbol in universe if not symbol in true_symbols))
-    global_assumptions.update(set(((symbol, True) for symbol in universe if symbol in true_symbols)))
-    log(f"Global assumptions: {global_assumptions}")
-    return global_assumptions
+        assumption_set = set(((symbol, False) for symbol in universe if not symbol in model.model))
+        assumption_set.update(set(((symbol, True) for symbol in universe if symbol in model.model)))
+        assumption_sets.append(assumption_set)
+
+    return assumption_sets
 
 
 class VizloControl(Control):
@@ -133,10 +132,11 @@ class VizloControl(Control):
         if len(self.painter):
             universe = get_ground_universe(program)
             global_assumptions = make_global_assumptions(universe, self.painter)
-            solve_runner = SolveRunner(program, global_assumptions, t.rule2signatures)
+            solve_runner = SolveRunner(program, t.rule2signatures)
+            g = solve_runner.make_graph(global_assumptions)
         else:
             solve_runner = SolveRunner(program, symbols_in_heads_map=t.rule2signatures)
-        g = solve_runner.make_graph()
+            g = solve_runner.make_graph()
         return g
 
     def paint(self, atom_draw_maximum: int = 20, show_entire_model: bool = False, sort_program: bool = True, **kwargs):

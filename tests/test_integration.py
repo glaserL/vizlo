@@ -16,7 +16,7 @@ def test_instanciations():
 def test_parameters_exist():
     debuggo = VizloControl()
     debuggo.add("base", [], "a.")
-    debuggo.paint(atom_draw_maximum=True)
+    debuggo.paint(atom_draw_maximum=23)
     debuggo.paint(show_entire_model=False)
     debuggo.paint(sort_program=False)
     debuggo.paint(figsize=(3, 4))
@@ -70,6 +70,8 @@ def test_print_only_specific_model_complete_definition():
     ctl.add_to_painter(interesting_model)
 
     g = ctl._make_graph()
+    ctl.paint()
+    # plt.show()
     nodes = list(g.nodes)
     assert len(nodes) == 3
     assert len(nodes[0].model) == 0
@@ -101,6 +103,7 @@ def test_adding_clingo_models_to_painter():
         for m in handle:
             if m.contains(clingo.Function("b", [clingo.Number(1)])):
                 ctl.add_to_painter(m)
+    ctl.paint()
 
     g2 = ctl._make_graph()
     assert len(g2) > 1 and len(g1) > 1, "Using painter should not make everything invalid."
@@ -166,7 +169,7 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
 
-@pytest.mark.skip
+@pytest.mark.skip("Only service test to make documentation.")
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
     prg = "{a}. :- a. {b}."
@@ -175,11 +178,71 @@ def test_make_documentation_img():
     plt.savefig("../docs/img/sample.png", dpi=300)
 
 
+@pytest.mark.skip("Not implemented yet")
+def test_correct_recognition_of_non_recursive_rule_sets():
+    prg = """
+    number(1..3).
+
+    % alldifferent TODO: this is not recursive
+    1 #sum{1,X,Y : q(X,Y) : number(Y) } 1 :- number(X) . 
+    :- not 1 #sum{1,X,Y : q(X,Y) , number(Y) } 1 , number(X) . 
+    { q(X,Y) } :- number(Y), number(X).
+    1 { q(X,Y) : number(X) } 1 :- number(Y).
+    % remove conflicting answers
+    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
+    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
+    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
+    """
+    prg = """
+       1{a;b}.
+       1{b;c}1.
+       """
+
+
 def testy_test():
+    prg = """
+ % domain
+ number(1..4).
+
+ % alldifferent
+ 1 { q(X,Y) : number(Y) } 1 :- number(X).
+ 1 { q(X,Y) : number(X) } 1 :- number(Y).
+ % remove conflicting answers
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
+ :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
+ """
     ctl = VizloControl(["0"])
-    prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
     ctl.add("base", [], prg)
-    ctl.paint(show_entire_model=True, dpi=300)
+    ctl.ground([("base", [])])
+    c = 0
+    with ctl.solve(yield_=True) as h:
+        for m in h:
+            c += 1
+            if c > 1:
+                break
+            else:
+                ctl.add_to_painter(m)
+
+    assert len(ctl.painter) > 0, f"This test should add models to the painter."
+    g = ctl._make_graph()
+    assert len(g) == 5, f"Something breaks during solving."
+
+    ctl = VizloControl(["0"])
+    ctl.add("base", [], prg)
+    ctl.ground([("base", [])])
+    c = 0
+    with ctl.solve(yield_=True) as h:
+        for m in h:
+            c += 1
+            if c > 2:
+                break
+            else:
+                ctl.add_to_painter(m)
+
+    assert len(ctl.painter) > 0, f"This test should add models to the painter."
+    g = ctl._make_graph()
+    assert len(g) == 9, f"Something breaks during solving."
 
 
 def test_pretty_import():

@@ -61,7 +61,7 @@ class SolveWorker:
     Object that is concerned with creating new SolverStates to be added to the graph.
     """
 
-    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads=None, fixed_assumptions=None):
+    def __init__(self, main, ctl: clingo.Control, rule: ASTRuleSet, symbols_in_heads=None):
         """
         Should contain only information concerned with one rule set.
         :param main:
@@ -70,24 +70,36 @@ class SolveWorker:
         :param symbols_in_heads:
         :param fixed_assumptions:
         """
-        if fixed_assumptions is None:
-            fixed_assumptions = set()
         if symbols_in_heads is None:
             symbols_in_heads = set()
         self.main = main
         self.ctl = ctl
         self.rule = rule
         self.singatures_in_heads = symbols_in_heads
-        self.fixed_assumptions = fixed_assumptions
 
-    def run(self, i):
+    @staticmethod
+    def _filter_relevant_assumptions(global_assumptions: Collection[Tuple[Symbol, bool]],
+                                     signatures_of_heads: Collection[Tuple[str, int]]):
+        """
+        Returns a partial set of the global assumptions that only contains those assumptions that the head depends on
+        :param global_assumptions: a collection of Symbols and whether they are globally considered true or false
+        :param signatures_of_heads: a collection of signatures (name, arity)
+        :return: a partial set of the global_assumptions that matched
+        """
+        result = [glob for glob in global_assumptions if
+                  any(glob[0].match(name, arity) for name, arity in signatures_of_heads)]
+        # print(f"{global_assumptions}, {signatures_of_heads} -> {result}")
+        return result
+
+    def run(self, i, global_assumptions):
         # analytically find recursive components and add them at once
         partial_models = self.main.find_active_nodes_at_time_step(i)
         log(f"{self.rule} with {len(partial_models)} previous partial models.")
         for partial_model in partial_models:
             # print(f"Continuing with {partial_model}")
             assumptions = self._create_true_symbols_from_solver_state(partial_model)
-            assumptions.extend(self.fixed_assumptions)
+            relevant_assumptions = self._filter_relevant_assumptions(global_assumptions, self.singatures_in_heads)
+            assumptions.extend(relevant_assumptions)
             log(f"Assumptions: {assumptions}, model: {partial_model}")
             new_partial_models = self._get_new_partial_models(assumptions, self.ctl, i)
             _consolidate_new_solver_states(assumptions, new_partial_models)
@@ -117,7 +129,6 @@ class SolveWorker:
         for false in s.falses:
             if not any((false.match(s[0], s[1]) for s in self.singatures_in_heads)):
                 syms.append((false, False))
-        syms.extend(self.fixed_assumptions)
         return syms
 
 
@@ -154,14 +165,12 @@ class SolveRunner:
     """
     The main solve runner that delegates each ruleset to a worker and collects the resulting graph.
     """
-
-    def __init__(self, program: ASTProgram, global_assumptions: Set[Tuple[Symbol, bool]] = None,
+    def __init__(self, program: ASTProgram,
                  symbols_in_heads_map=None):
         if symbols_in_heads_map is None:
             symbols_in_heads_map = dict()
         self.prg: ASTProgram = program
-        self.global_assumptions = global_assumptions if global_assumptions is not None else set()
-        log(f"Created AnotherOne with {len(self.prg)} rules, {symbols_in_heads_map} signatures and {len(self.global_assumptions)} global assumptions")
+        log(f"Created AnotherOne with {len(self.prg)} rules, {symbols_in_heads_map} signatures.")
 
         self._g: nx.Graph = nx.DiGraph()
         self._g.add_node(INITIAL_EMPTY_SET)
@@ -175,8 +184,11 @@ class SolveRunner:
             signatures_of_heads = set()
             for rule in rule_set:
                 signatures_of_heads.update(symbols_in_heads_map.get(str(rule), set()))
-            relevant_assumptions = self._filter_relevant_assumptions(self.global_assumptions, signatures_of_heads)
-            self._solvers.append(SolveWorker(self, ctl, rule_set, signatures_of_heads, relevant_assumptions))
+            self._solvers.append(SolveWorker(self, ctl, rule_set, signatures_of_heads))
+
+    def reset_graph(self):
+        self._g = nx.DiGraph()
+        self._g.add_node(INITIAL_EMPTY_SET)
 
     def find_active_nodes_at_time_step(self, step: int) -> List[SolverState]:
         """
@@ -190,10 +202,19 @@ class SolveRunner:
                 nodes.append(node)
         return nodes
 
-    def make_graph(self):
-        for i, s in enumerate(self._solvers):
-            s.run(i)
-        return self._g
+    def make_graph(self, assumption_sets=None):
+        result_graph = nx.DiGraph()
+        if assumption_sets is None or len(assumption_sets) == 0:
+            for i, s in enumerate(self._solvers):
+                s.run(i, set())
+            result_graph = self._g
+        else:
+            for assumptions in assumption_sets:
+                for i, s in enumerate(self._solvers):
+                    s.run(i, assumptions)
+                result_graph = nx.compose(result_graph, self._g)
+                self.reset_graph()
+        return result_graph
 
     def update_graph(self, previous: SolverState, rule: str, following_solver_states: Set[SolverState]) -> None:
         """
@@ -205,18 +226,6 @@ class SolveRunner:
         for following in following_solver_states:
             self._g.add_edge(previous, following, rule=rule)
 
-    def _filter_relevant_assumptions(self, global_assumptions: Collection[Tuple[Symbol, bool]],
-                                     signatures_of_heads: Collection[Tuple[str, int]]):
-        """
-        Returns a partial set of the global assumptions that only contains those assumptions that the head depends on
-        :param global_assumptions: a collection of Symbols and whether they are globally considered true or false
-        :param signatures_of_heads: a collection of signatures (name, arity)
-        :return: a partial set of the global_assumptions that matched
-        """
-        result = [glob for glob in global_assumptions if
-                  any(glob[0].match(name, arity) for name, arity in signatures_of_heads)]
-        # print(f"{global_assumptions}, {signatures_of_heads} -> {result}")
-        return result
 
 
 INITIAL_EMPTY_SET = SolverState(model=set(), is_still_active=True, step=0)
