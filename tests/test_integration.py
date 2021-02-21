@@ -177,27 +177,6 @@ def test_make_documentation_img():
     plt.savefig("../docs/img/sample.png", dpi=300)
 
 
-@pytest.mark.skip("Not implemented yet")
-def test_correct_recognition_of_non_recursive_rule_sets():
-    prg = """
-    number(1..3).
-
-    % alldifferent TODO: this is not recursive
-    1 #sum{1,X,Y : q(X,Y) : number(Y) } 1 :- number(X) . 
-    :- not 1 #sum{1,X,Y : q(X,Y) , number(Y) } 1 , number(X) . 
-    { q(X,Y) } :- number(Y), number(X).
-    1 { q(X,Y) : number(X) } 1 :- number(Y).
-    % remove conflicting answers
-    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
-    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.
-    :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 - X1 == Y2 - X2.
-    """
-    prg = """
-       1{a;b}.
-       1{b;c}1.
-       """
-
-
 def testy_test():
     prg = """
  % domain
@@ -256,3 +235,22 @@ def test_dont_accept_false_as_model_length():
     ctl.add("base", [], prg)
     with pytest.raises(ValueError):
         ctl.paint(True)
+
+
+def test_properties_proxied_from_internal():
+    ctl = VizloControl(["0"])
+    prg = "{a}. :- a. {b}. c :- d. d :- c, not d."
+    ctl.add("base", [], prg)
+    ctl.solve()
+    assert ctl.statistics == ctl.control.statistics
+    assert ctl.is_conflicting == ctl.control.is_conflicting
+    # assert ctl.use_enumeration_assumption == ctl.control.use_enumeration_assumption
+    # assert ctl.theory_atoms == ctl.control.theory_atoms
+    # assert ctl.symbolic_atoms == ctl.control.symbolic_atoms
+    # assert ctl.configuration == ctl.control.configuration
+
+
+def test_load():
+    ctl = VizloControl()
+    ctl.load("program.lp")
+    assert len(ctl.program) > 0

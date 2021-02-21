@@ -1,9 +1,10 @@
 import clingo
-from clingo import Control, Symbol, Model, SolveHandle, SolveResult
+from clingo import Control, Symbol, Model, SolveHandle, SolveResult, Configuration, SymbolicAtoms, TheoryAtomIter, \
+    Backend, ProgramBuilder
 from vizlo.transform import JustTheRulesTransformer
 from vizlo.graph import NetworkxDisplay
 from vizlo.solver import SolveRunner, INITIAL_EMPTY_SET
-from typing import List, Tuple, Any, Union, Set, Collection, Dict
+from typing import List, Tuple, Any, Union, Set, Collection, Dict, Optional
 import networkx as nx
 
 # Types
@@ -72,7 +73,6 @@ class VizloControl(Control):
         self.control = Control(arguments, logger, message_limit)
         self.painter: List[PythonModel] = list()
         self.program: ASTProgram = list()
-        self.raw_programs: Dict[str, str] = {}
         self.raw_program: str = ""
         self.transformer = JustTheRulesTransformer()
         self._print_changes_only = not print_entire_models
@@ -92,10 +92,18 @@ class VizloControl(Control):
               async_: bool = False) -> Union[SolveHandle, SolveResult]:
         return self.control.solve(assumptions, on_model, on_statistics, on_finish, yield_, async_)
 
+    def load(self, path):
+        prg = ""
+        with open(path) as f:
+            for line in f:
+                prg += line
+        self.program += prg
+        self.control.load(path)
+
     def add(self, name: str, parameters: List[str], program: str) -> None:
-        self.raw_programs[name] = self.raw_programs.get(name, "") + program
         self.raw_program += program
         self.control.add(name, parameters, program)
+
 
     def find_nodes_corresponding_to_stable_models(self, g, stable_models):
         correspoding_nodes = set()
@@ -170,3 +178,55 @@ class VizloControl(Control):
         """Short cut for complex add and ground calls, should only be used for debugging purposes."""
         self.add("base", [], prg)
         self.ground([("base", [])])
+
+    ##################
+    # Just pass-through stuff
+    ##################
+
+    @property
+    def configuration(self) -> Configuration:
+        return self.control.configuration
+
+    @property
+    def is_conflicting(self) -> bool:
+        return self.control.is_conflicting
+
+    @property
+    def statistics(self) -> dict:
+        return self.control.statistics
+
+    @property
+    def symbolic_atoms(self) -> SymbolicAtoms:
+        return self.control.symbolic_atoms
+
+    @property
+    def theory_atoms(self) -> TheoryAtomIter:
+        return self.control.theory_atoms
+
+    @property
+    def use_enumeration_assumption(self) -> bool:
+        return self.control.use_enumeration_assumption
+
+    def assign_external(self, external: Union[Symbol, int], truth: Optional[bool], **kwargs) -> None:
+        self.control.assign_external(external, truth, **kwargs)
+
+    def backend(self) -> Backend:
+        return self.control.backend()
+
+    def builder(self) -> ProgramBuilder:
+        return self.control.builder()
+
+    def cleanup(self) -> None:
+        self.control.cleanup()
+
+    def get_const(self, name: str) -> Optional[Symbol]:
+        return self.control.get_const(name)
+
+    def interrupt(self):
+        self.control.interrupt()
+
+    def register_observer(self, observer, replace=False):
+        self.register_observer(observer, replace)
+
+    def release_external(self, symbol: Union[Symbol, int]) -> None:
+        self.control.release_external(symbol)
