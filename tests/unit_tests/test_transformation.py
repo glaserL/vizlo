@@ -1,7 +1,9 @@
 import clingo
+import networkx as nx
 
 from vizlo import transform
-from vizlo.transform import make_dependency_graph
+from vizlo.transform import FindRecursiveRulesTransformer, remove_loops
+from vizlo.util import filter_prg
 
 
 def are_two_lists_identical(a, b):
@@ -113,7 +115,7 @@ def test_single_rule_dependency_graph():
     prg = "a."
     t = transform.JustTheRulesTransformer()
     split = t._split_program_into_rules(prg)
-    g = make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
+    g = t.make_dependency_graph(split, t._head_signature2rule, t._body_signature2rule)
     assert len(g) == 1
 
 
@@ -143,7 +145,7 @@ def test_transformation_with_choice_on_variables():
     prg = "a((1..15)). { b(X) :  } :- a(X)."
     t = transform.JustTheRulesTransformer()
     sorted = t.transform(prg)
-    g = make_dependency_graph(sorted, t._head_signature2rule, t._body_signature2rule)
+    g = t.make_dependency_graph(sorted, t._head_signature2rule, t._body_signature2rule)
     assert len(g) == 2
     assert len(sorted) == 2
 
@@ -173,3 +175,104 @@ def test_transform_without_instanciation():
     assert len(sorted)
     assert is_str_list_and_ast_list_identical(sorted[0], ["a."])
     assert is_str_list_and_ast_list_identical(sorted[1], ["b :- a."])
+
+
+def test_recursion_detection_doesnt_add_conditionals():
+    prg = """
+    
+     1 { q(X,Y) : number(Y) } 1 :- number(X).
+     1 { q(X,Y) : number(X) } 1 :- number(Y).
+    """
+    rule_set = []
+    clingo.parse_program(
+        prg,
+        lambda stm: filter_prg(stm, rule_set))
+    rt = FindRecursiveRulesTransformer()
+    for rule in rule_set:
+        rt.visit(rule)
+    g = rt.make_dependency_graph(rule_set)
+    g = remove_loops(g)
+    assert len(g) > 0, "dependency graph should be created."
+    assert len(g.nodes) == 2, "There should be two rule nodes in the dependency graph."
+    assert len(g.edges) == 0, "There should be no dependency in the dependency graph."
+    assert len(list(nx.simple_cycles(g))) == 0, "There should be no circles in the dependency graph."
+
+
+def test_recursion_detection_doesnt_confuse_choice_rules():
+    prg = """
+    a.
+    {b} :- a.
+    1{x(b)} :- b.
+    """
+    rule_set = []
+    clingo.parse_program(
+        prg,
+        lambda stm: filter_prg(stm, rule_set))
+    rt = FindRecursiveRulesTransformer()
+    for rule in rule_set:
+        rt.visit(rule)
+    g = rt.make_dependency_graph(rule_set)
+    g = remove_loops(g)
+    assert len(g) > 0, "dependency graph should be created."
+    assert len(g.nodes) == 3, "There should be rule nodes in the dependency graph."
+    assert len(g.edges) == 2, "There should be two dependency in the dependency graph."
+    assert len(list(nx.simple_cycles(g))) == 0, "There should be no circles in the dependency graph."
+
+def test_recursion_detection_recognizes_recursion_with_atoms():
+    prg = """
+    a :- b.
+    b :- a.
+    """
+    rule_set = []
+    clingo.parse_program(
+        prg,
+        lambda stm: filter_prg(stm, rule_set))
+    rt = FindRecursiveRulesTransformer()
+    for rule in rule_set:
+        rt.visit(rule)
+    g = rt.make_dependency_graph(rule_set)
+    g = remove_loops(g)
+    assert len(g) > 0, "dependency graph should be created."
+    assert len(g.nodes) == 2, "There should be rule nodes in the dependency graph."
+    assert len(g.edges) == 2, "There should be no dependency in the dependency graph."
+    assert len(list(nx.simple_cycles(
+        g))) == 1, "There should be a circle in the dependency graph."
+
+
+def test_recursion_detection_recognizes_recursion_with_fuctions():
+    prg = """
+    x(X) :- y(X).
+    y(Y) :- x(Y).
+    """
+    rule_set = []
+    clingo.parse_program(
+        prg,
+        lambda stm: filter_prg(stm, rule_set))
+    rt = FindRecursiveRulesTransformer()
+    for rule in rule_set:
+        rt.visit(rule)
+    g = rt.make_dependency_graph(rule_set)
+    g = remove_loops(g)
+    assert len(g) > 0, "dependency graph should be created."
+    assert len(g.nodes) == 2, "There should be rule nodes in the dependency graph."
+    assert len(g.edges) == 2, "There should be no dependency in the dependency graph."
+    assert len(list(nx.simple_cycles(g))) == 1, "There should be a circle in the dependency graph."
+
+def test_recursion_detection_recognizes_recursion_with_choice_rules():
+    prg = """
+    {x(X)} :- y(X).
+    y(Y) :- x(Y).
+    """
+    rule_set = []
+    clingo.parse_program(
+        prg,
+        lambda stm: filter_prg(stm, rule_set))
+    rt = FindRecursiveRulesTransformer()
+    for rule in rule_set:
+        rt.visit(rule)
+    g = rt.make_dependency_graph(rule_set)
+    g = remove_loops(g)
+    assert len(g) > 0, "dependency graph should be created."
+    assert len(g.nodes) == 2, "There should be rule nodes in the dependency graph."
+    assert len(g.edges) == 2, "There should be no dependency in the dependency graph."
+    assert len(list(nx.simple_cycles(g))) == 1, "There should be a circle in the dependency graph."

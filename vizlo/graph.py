@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mp
 
 from vizlo.solver import SolverState
+from vizlo.transform import FindRecursiveRulesTransformer
+from vizlo.types import ASTRuleSet
 from vizlo.util import log
 
 NODE_SIZE = 0
@@ -396,6 +398,13 @@ class NetworkxDisplay:
             labelleft=False,
         )
 
+    def is_recursive(self, rule_set: ASTRuleSet):
+        another = FindRecursiveRulesTransformer()
+        for rule in rule_set:
+            another.visit(rule)
+        g = another.make_dependency_graph(rule_set)
+        return len(list(nx.simple_cycles(g))) > 0
+
     def make_labels(self):
         normal_models = {}
         constraint_models = {}
@@ -412,8 +421,7 @@ class NetworkxDisplay:
 
             for neighbor, edge_attrs in nbrsdict.items():
                 rule = edge_attrs["rule"]
-                rule_str = str(rule)
-                if rule_str.count(":-") > 1:
+                if self.is_recursive(rule):
                     recursive_models[neighbor] = self.solver_state_to_string(neighbor)
                     rule_labels[(node, neighbor)] = self.make_rec_label(rule)
                 else:
@@ -442,4 +450,4 @@ class NetworkxDisplay:
         return "\n".join([str(e) for e in param])
 
     def make_rule_label(self, param):
-        return " ".join([str(e) for e in param])
+        return "\n".join([str(e) for e in param])

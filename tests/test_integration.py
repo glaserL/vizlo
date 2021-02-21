@@ -70,8 +70,7 @@ def test_print_only_specific_model_complete_definition():
     ctl.add_to_painter(interesting_model)
 
     g = ctl._make_graph()
-    ctl.paint()
-    # plt.show()
+
     nodes = list(g.nodes)
     assert len(nodes) == 3
     assert len(nodes[0].model) == 0
@@ -169,7 +168,7 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
 
-#@pytest.mark.skip("Only service test to make documentation.")
+@pytest.mark.skip("Only service test to make documentation.")
 def test_make_documentation_img():
     ctl = VizloControl(["0"])
     prg = "{a}. {b}. :- a. "
@@ -207,6 +206,7 @@ def testy_test():
  % alldifferent
  1 { q(X,Y) : number(Y) } 1 :- number(X).
  1 { q(X,Y) : number(X) } 1 :- number(Y).
+ 
  % remove conflicting answers
  :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 == Y2.
  :- q(X1,Y1), q(X2,Y2), X1 < X2, Y1 + X1 == Y2 + X2.

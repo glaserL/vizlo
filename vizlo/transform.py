@@ -117,6 +117,36 @@ class JustTheRulesTransformer(Transformer):
 
         return function
 
+    def make_dependency_graph(self, rules: List[clingo.ast.Rule],
+                              head_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]],
+                              body_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]]) -> nx.DiGraph:
+        """
+        We draw a dependency graph based on which rule head contains which literals.
+        That way we know, that in order to have a rule r with a body containing literal l, all rules that have l in their
+        heads must come before r.
+        :param rules: list of rules
+        :param head_dependencies: Mapping from a signature to all rules containing them in the head
+        :param body_dependencies: mapping from a signature to all rules containing them in the body
+        :return:
+        """
+        g = nx.DiGraph()
+        # Add independent rules
+        for _, rules_with_head in head_dependencies.items():
+            for x in rules_with_head:
+                for y in rules_with_head:
+                    g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
+        # Add dependents
+        for head_signature, rules_with_head in head_dependencies.items():
+            dependent_rules = body_dependencies.get(head_signature, [])
+            for parent_rule in rules_with_head:
+                for dependent_rule in dependent_rules:
+                    g.add_edge(frozenset([str(parent_rule)]), frozenset([str(dependent_rule)]))
+            if len(dependent_rules) == 0:
+                for rule in rules_with_head:
+                    g.add_node(frozenset([str(rule)]))
+
+        return g
+
     def _split_program_into_rules(self, program: str) -> ASTRuleSet:
         rules = []
         clingo.parse_program(
@@ -134,7 +164,7 @@ class JustTheRulesTransformer(Transformer):
 
     def sort_program_by_dependencies(self, parse: ASTRuleSet) -> Program:
         log(f"Parse: {parse} ({len(parse)})")
-        deps = make_dependency_graph(parse, self._head_signature2rule, self._body_signature2rule)
+        deps = self.make_dependency_graph(parse, self._head_signature2rule, self._body_signature2rule)
         deps = merge_cycles(deps)
         deps = remove_loops(deps)
         self._deps = deps  # for debugging purposes
@@ -147,37 +177,6 @@ class JustTheRulesTransformer(Transformer):
         for rule_set in sorted_program:
             rules.append(parse_rule_set(rule_set))
         return rules
-
-
-def make_dependency_graph(rules: List[clingo.ast.Rule],
-                          head_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]],
-                          body_dependencies: Dict[Tuple[str, int], List[clingo.ast.AST]]) -> nx.DiGraph:
-    """
-    We draw a dependency graph based on which rule head contains which literals.
-    That way we know, that in order to have a rule r with a body containg literal l, all rules that have l in their
-    heads must come before r.
-    :param rules: list of rules
-    :param head_dependencies: Mapping from a signature to all rules containg them in the head
-    :param body_dependencies: mapping from a signature to all rules containing them in the body
-    :return:
-    """
-    g = nx.DiGraph()
-    # Add independent rules
-    for _, rules_with_head in head_dependencies.items():
-        for x in rules_with_head:
-            for y in rules_with_head:
-                g.add_edge(frozenset([str(x)]), frozenset([str(y)]))
-    # Add dependents
-    for head_signature, rules_with_head in head_dependencies.items():
-        dependent_rules = body_dependencies.get(head_signature, [])
-        for parent_rule in rules_with_head:
-            for dependent_rule in dependent_rules:
-                g.add_edge(frozenset([str(parent_rule)]), frozenset([str(dependent_rule)]))
-        if len(dependent_rules) == 0:
-            for rule in rules_with_head:
-                g.add_node(frozenset([str(rule)]))
-
-    return g
 
 
 def merge_nodes(nodes: frozenset) -> frozenset:
@@ -232,3 +231,74 @@ def transform(program: str, sort: bool = True) -> ASTProgram:
     """
     t = JustTheRulesTransformer()
     return t.transform(program, sort)
+
+
+class FindRecursiveRulesTransformer(JustTheRulesTransformer):
+
+    def __init__(self):
+        super(FindRecursiveRulesTransformer, self).__init__()
+        self._dependency_map = dict()
+        self._head_signature2rule = dict()
+        self._body_signature2rule = dict()
+        self.rule2signatures = dict()
+
+    def visit_Program(self, program):
+        pass
+
+    def visit_Rule(self, rule):
+        head = rule.head
+        self.visit(head, rule=rule, pos="head")
+        self.visit(rule.body, rule=rule, pos="body")
+        return rule
+
+    def visit_ConditionalLiteral(self, cond_literal, **kwargs):
+        self.visit(cond_literal.condition, is_conditional=True, **kwargs)
+        self.visit(cond_literal.literal, is_conditional=False, **kwargs)
+        return cond_literal
+
+    def visit_Function(self, literal, rule=None, is_conditional=False, pos=None):
+        if rule is None:
+            return rule
+        if pos is None:
+            return rule
+        signature = make_signature(literal)
+        if rule is not None and not is_conditional:
+            if pos == "head":
+                tmp = self._head_signature2rule.get(signature, list())
+                tmp.append(rule)
+                self._head_signature2rule[signature] = tmp
+                tmp = self.rule2signatures.get(str(rule), [])
+                tmp.append(signature)
+                self.rule2signatures[str(rule)] = tmp
+            if pos == "body":
+                tmp = self._body_signature2rule.get(signature, list())
+                tmp.append(rule)
+                self._body_signature2rule[signature] = tmp
+        return literal
+
+    def transform(self, program, sort=True) -> ASTProgram:
+        rules = self._split_program_into_rules(program)
+        if sort:
+            rules = self.sort(rules)
+        else:
+            rules = [[rule] for rule in rules]
+        return rules
+
+    def make_dependency_graph(self, rules: List[clingo.ast.Rule]):
+        g = nx.DiGraph()
+        for rule in rules:
+            g.add_node(frozenset([str(rule)]))
+        for body_signatures, rules_with_body_signatures in self._body_signature2rule.items():
+            for rule_with_body_signature in rules_with_body_signatures:
+                dependent_rules = self._head_signature2rule.get(body_signatures, [])
+                for dependent_rule in dependent_rules:
+                    g.add_edge(frozenset([str(dependent_rule)]), frozenset([str(rule_with_body_signature)]))
+        return g
+
+    def sort_program_by_dependencies(self, parse: ASTRuleSet) -> Program:
+        log(f"Parse: {parse} ({len(parse)})")
+        deps = self.make_dependency_graph(parse, self._dependency_map)
+        deps = merge_cycles(deps)
+        deps = remove_loops(deps)
+        program = list(nx.topological_sort(deps))
+        return program
