@@ -5,5 +5,6 @@ __pycache__/
 *DS_Store
 .pytest_cache
 .vscode
+*.pymon
 
 *.idea
