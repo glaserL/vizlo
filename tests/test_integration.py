@@ -167,16 +167,6 @@ def test_calling_paint_should_return_a_plottable_figure():
     assert result is not None, "Debuggo.paint() should return a result."
     assert isinstance(result, plt.Figure), "Debuggo.paint() should return a plottable array."
 
-
-@pytest.mark.skip("Only service test to make documentation.")
-def test_make_documentation_img():
-    ctl = VizloControl(["0"])
-    prg = "{a}. {b}. :- a. "
-    ctl.add("base", [], prg)
-    ctl.paint(show_entire_model=True, sort_program=False, figsize=(5, 3.5), dpi=300)
-    plt.savefig("../docs/img/sample.png", dpi=300)
-
-
 def testy_test():
     prg = """
  % domain
@@ -250,6 +240,7 @@ def test_properties_proxied_from_internal():
     # assert ctl.configuration == ctl.control.configuration
 
 
+@pytest.mark.skip("Working with paths isn't consistent.")
 def test_load():
     ctl = VizloControl()
     ctl.load("program.lp")
