@@ -8,7 +8,7 @@ iterative simulation of the solving process.
 
 Vizlo is distributed via [conda-forge](https://conda-forge.org):
 
-`python install -c conda-forge vizlo`
+`conda install -c conda-forge vizlo`
 ## Usage
 Debuggo wraps itself around the Control object of the clingo python API. We assume you are familiar with the 
 [clingo python API](https://potassco.org/clingo/python-api/5.4/).
