@@ -1,4 +1,7 @@
 # vizlo
+> ⚠️ **IMPORTANT**: vizlo is no longer maintained. 
+> The follow-up tool is called viASP, available here: [glaserL/viasp](https://github.com/glaserL/viasp)⚠️
+
 Vizlo is a visualization extension for [clingo](https://potassco.org/clingo/). 
 It is intended to help you visualize and potentially debug programs by showing an 
 iterative simulation of the solving process.
